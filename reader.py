@@ -1,6 +1,6 @@
 #reader.py
 
-import os, re
+import os, re, math
 
 
 # list of filler words to be ignored
@@ -31,6 +31,7 @@ class Reader():
 	API Functions:
 	__init__(files) - pass in a list of file names (paths) to be read.
 	read() - read in all files in the list given to constructor.
+	report() - prints the total number of read documents and words.
 	"""
 	
 	def __init__(self, files):
@@ -40,8 +41,17 @@ class Reader():
 		Remembers all file names, and initializes empty lists.
 		"""
 		self.files = files
+		self.num_docs = len(self.files)
 		self.doc_vecs = []
 		self.word_list = []
+	
+	
+	def report(self):
+		"""
+		Prints out statistics about the number of documents and words seen.
+		"""
+		print("Loaded: {} documents and {} unique words (filtered)."
+			.format(self.num_docs, len(self.word_list)))
 	
 	
 	def read(self):
@@ -53,16 +63,24 @@ class Reader():
 		word in each document (words are identified by index only).
 		Words are matched by index in the word_list list.
 		"""
-		for fname in self.files:
-			# make sure file exists - if not, print error and skip it
+		self.num_docs = len(self.files)
+		findex = 0
+		for fname in self.files:# findex in range(self.num_docs):
+			#fname = self.files[findex]
+			# make sure file exists - if not, print error and remove it
 			if not os.path.isfile(fname):
-				print("File not found: \"{}\"".format(fname))
+				print("File not found: \"{}\"     ".format(fname))
+				#del self.files[findex] - TODO: can't delete while in loop
+				self.num_docs -= 1
 			else:
 				with open(fname, 'r') as file:
 					document_vector = []
 					# read the file line by line and parse each line
 					lines = file.readlines()
-					for line in lines:
+					num_lines = len(lines)
+					for lindex in range(num_lines):
+						line = lines[lindex]
+						self.print_status(findex, lindex, num_lines)
 						words_in_line = line.split(' ')
 						for word in words_in_line:
 							word = self.filter(word)
@@ -77,9 +95,11 @@ class Reader():
 								document_vector[index] += 1
 								#print(document_vector)
 					self.doc_vecs.append(document_vector)
+				findex += 1
 		
 		# pad the vectors so that they all have equal length
 		self.pad()
+		print("\r")
 	
 	
 	def filter(self, word):
@@ -107,3 +127,11 @@ class Reader():
 		for document_vector in self.doc_vecs:
 			while len(document_vector) < len(self.word_list):
 				document_vector.append(0)
+	
+	
+	def print_status(self, findex, lindex, num_lines):
+		"""
+		"""
+		prog = math.ceil(100 * ((lindex+1) / num_lines))
+		msg = "Document {} of {}: {}%  ".format(findex+1, self.num_docs, prog)
+		print(msg, end="\r")

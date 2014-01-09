@@ -17,6 +17,7 @@
 
 # import Reader module
 from reader import Reader
+from vector import Vector
 
 
 ################################################################################
@@ -24,20 +25,74 @@ from reader import Reader
 class SPKMeans():
 	"""Docs"""
 	
+	
 	def __init__(self, reader):
 		"""Docs"""
 		self.reader = reader
+		self.reader.read()
+		self.reader.report()
+		
+		self.partitions = []
+		
 
 	def cluster(self, k):
 		"""Docs"""
-		self.reader.read()
+		self.randomize_partitions(k)
 		return 0
+	
+	
+	def randomize_partitions(self, k):
+		"""
+		Create a set of k partitions with the documents randomly
+		distributed to a cluster. Maintains as much distribution equality
+		between the partitions as possible.
+		TODO: not random; splits up by order docs were scanned in
+		"""
+		num_per_partition = int(self.reader.num_docs / k)
+		for pindex in range(k):
+			partition_vecs = []
+			partition_size = num_per_partition
+			if pindex == k-1:
+				partition_size = partition_size + (self.reader.num_docs % k)
+			for num in range(partition_size):
+				num += (pindex * (k-1))
+				partition_vecs.append(self.reader.doc_vecs[num])
+			self.partitions.append(partition_vecs)
+		#for p in self.partitions:
+		#	print(p)
+	
+	
+	def compute_concept(self, p):
+		"""
+		Computers the concept vector of given partition p, and returns said
+		concept vector. Parameter p must be a list containing at least one
+		document vector (list).
+		"""
+		p_size = len(p)
+		num_words = len(self.reader.word_list)
+		
+		# computer sum of all vectors in partition p
+		sum_v = [0] * num_words # list starts with all zeros
+		for doc_v in p:
+			for w in range(num_words):
+				sum_v[w] += doc_v[w]
+		
+		# compute the mean vector for partition using the sum vector
+		mean_v = [1 / p_size] * num_words
+		for w in range(num_words):
+			mean_v[w] *= sum_v[w]
+		
+		# computer the norm of the mean vector
+		norm_v = []
+		cv = 0
+		return cv
 ################################################################################
 
 
 # define documents to be used and number of clusters
 NUM_CLUSTERS = 2
-docs = ["one.txt", "x", "two.txt", "three.txt"]
+docs = ['one.txt', 'x', 'two.txt', 'three.txt']
+		#'long1.txt', 'long2.txt', 'long3.txt']
 
 # start here
 if __name__ == "__main__":
