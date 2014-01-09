@@ -38,6 +38,8 @@ class SPKMeans():
 	def cluster(self, k):
 		"""Docs"""
 		self.randomize_partitions(k)
+		v = self.compute_concept(self.partitions[0])
+		print(v)
 		return 0
 	
 	
@@ -72,20 +74,24 @@ class SPKMeans():
 		num_words = len(self.reader.word_list)
 		
 		# computer sum of all vectors in partition p
-		sum_v = [0] * num_words # list starts with all zeros
+		v = Vector(num_words)
 		for doc_v in p:
-			for w in range(num_words):
-				sum_v[w] += doc_v[w]
+			v += doc_v
+		#sum_v = [0] * num_words # list starts with all zeros
+		#for doc_v in p:
+		#	for w in range(num_words):
+		#		sum_v[w] += doc_v[w]
 		
 		# compute the mean vector for partition using the sum vector
-		mean_v = [1 / p_size] * num_words
-		for w in range(num_words):
-			mean_v[w] *= sum_v[w]
+		v *= (1/p_size)
+		#mean_v = [1 / p_size] * num_words
+		#for w in range(num_words):
+		#	mean_v[w] *= sum_v[w]
 		
 		# computer the norm of the mean vector
-		norm_v = []
-		cv = 0
-		return cv
+		v = v.norm()
+		
+		return v
 ################################################################################
 
 

@@ -1,6 +1,13 @@
-#reader.py
+# Reader class:
+# Provides basic functionality to read text files (documents) and stores
+# the number of occurrences of each word in a document in a corresponding
+# document vector. A list of all seen words is tracked.
+# The indices of each document vector correspond to the word at the index
+# of the words list. All document vectors account for each word, even
+# if the word never appears in that particular document.
 
 import os, re, math
+from vector import Vector
 
 
 # list of filler words to be ignored
@@ -74,7 +81,7 @@ class Reader():
 				self.num_docs -= 1
 			else:
 				with open(fname, 'r') as file:
-					document_vector = []
+					document_vector = Vector()
 					# read the file line by line and parse each line
 					lines = file.readlines()
 					num_lines = len(lines)
@@ -131,6 +138,9 @@ class Reader():
 	
 	def print_status(self, findex, lindex, num_lines):
 		"""
+		Prints out the current document being loaded and the percentage
+		of lines that have been processed. This message is printed and
+		over-written on the same line with each new status printout.
 		"""
 		prog = math.ceil(100 * ((lindex+1) / num_lines))
 		msg = "Document {} of {}: {}%  ".format(findex+1, self.num_docs, prog)
