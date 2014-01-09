@@ -27,7 +27,10 @@ class SPKMeans():
 	
 	
 	def __init__(self, reader):
-		"""Docs"""
+		"""
+		Set up the reader and call it to read all of the documents.
+		Initializes partitions to be an empty list.
+		"""
 		self.reader = reader
 		self.reader.read()
 		self.reader.report()
@@ -36,7 +39,8 @@ class SPKMeans():
 		
 
 	def cluster(self, k):
-		"""Docs"""
+		"""Run the full SPKMeans algorithm, and return the partitions."""
+		print("Running SPKMeans clustering: {} partitions.".format(k))
 		self.randomize_partitions(k)
 		v = self.compute_concept(self.partitions[0])
 		print(v)
@@ -66,32 +70,22 @@ class SPKMeans():
 	
 	def compute_concept(self, p):
 		"""
-		Computers the concept vector of given partition p, and returns said
-		concept vector. Parameter p must be a list containing at least one
-		document vector (list).
+		Computes the Concept Vector of given partition p, and returns said
+		Concept Vector. Parameter p must be a list containing at least one
+		document Vector.
 		"""
-		p_size = len(p)
-		num_words = len(self.reader.word_list)
-		
 		# computer sum of all vectors in partition p
-		v = Vector(num_words)
+		cv = Vector(len(self.reader.word_list))
 		for doc_v in p:
-			v += doc_v
-		#sum_v = [0] * num_words # list starts with all zeros
-		#for doc_v in p:
-		#	for w in range(num_words):
-		#		sum_v[w] += doc_v[w]
-		
+			cv += doc_v
+			
 		# compute the mean vector for partition using the sum vector
-		v *= (1/p_size)
-		#mean_v = [1 / p_size] * num_words
-		#for w in range(num_words):
-		#	mean_v[w] *= sum_v[w]
+		cv *= (1/len(p))
 		
 		# computer the norm of the mean vector
-		v = v.norm()
+		cv = cv.norm()
 		
-		return v
+		return cv
 ################################################################################
 
 
