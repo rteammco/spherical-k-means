@@ -15,6 +15,7 @@ class Vector():
 	len(v):		returns the length (size) of this Vector.
 	v + v2:		adds this Vector to Vector v2 and returns the result.
 	v * s:		multiplies this Vector by scalar s.
+	dot(b):		returns a dot product of this Vector with Vector b.
 	norm:		returns a normalized version of this Vector.
 	print(v):	prints a string representation of this Vector.
 	"""
@@ -92,9 +93,19 @@ class Vector():
 	__rmul__ = __mul__
 	
 	
+	def dot(self, other):
+		"""
+		Returns the dot product NUMBER value of this Vector with "other".
+		"""
+		result = 0
+		for i in range(self.size):
+			result += self.array[i] * other[i]
+		return result
+		
+	
 	def norm(self):
 		"""Returns a normalized version of this Vector."""
-		result = list(self.array)
+		result = Vector.from_array(self.array)
 		n = 0
 		for item in self.array:
 			n += item * item

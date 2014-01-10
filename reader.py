@@ -69,6 +69,7 @@ class Reader():
 		are then returned representing the occurrence count of every
 		word in each document (words are identified by index only).
 		Words are matched by index in the word_list list.
+		Returns the collected list of document Vectors.
 		"""
 		self.num_docs = len(self.files)
 		findex = 0
@@ -107,6 +108,8 @@ class Reader():
 		# pad the vectors so that they all have equal length
 		self.pad()
 		print("\r")
+		
+		return self.doc_vecs
 	
 	
 	def filter(self, word):

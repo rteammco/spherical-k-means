@@ -27,45 +27,66 @@ class SPKMeans():
 	
 	
 	def __init__(self, reader):
-		"""
-		Set up the reader and call it to read all of the documents.
-		Initializes partitions to be an empty list.
-		"""
+		"""Set up the reader and call it to read all of the documents."""
 		self.reader = reader
-		self.reader.read()
+		self.doc_vecs = self.reader.read()
+		self.num_docs = len(self.doc_vecs)
 		self.reader.report()
-		
-		self.partitions = []
 		
 
 	def cluster(self, k):
 		"""Run the full SPKMeans algorithm, and return the partitions."""
+		# k must be at least 2 (otherwise meaningless)
+		if k < 2:
+			print("Warning: must use at least 2 partitions. Stopping.")
+			return
+		
 		print("Running SPKMeans clustering: {} partitions.".format(k))
-		self.randomize_partitions(k)
-		v = self.compute_concept(self.partitions[0])
-		print(v)
+		
+		# TODO - txn scheme stuff? WTF?
+		
+		# create first partition set and concept vectors
+		partitions = self.randomize_partitions(k)
+		concepts = self.get_concepts(partitions)
+		
+		while True: # while delta_quality < q_threshold:
+			partitions = [[]] * k
+			
+			for i in range(self.num_docs): # for each document
+				#find closest doc vector of cosine similarity
+				closest = -1
+				closest_val = 0
+				for cv_index in range(k):
+					scrap = concepts[cv_index]
+					dot_p = self.doc_vecs[i].dot(concepts[cv_index])
+					if closest == -1 or dot_p < closest_val:
+						closest = cv_index
+						closest_val = dot_p
+						
+				# put the document Vector into the partition associated
+				#	with the closest concept Vector
+				partitions[closest].append(self.doc_vecs[i])
+				
+			# recalculate concept vectors
+			concepts = self.get_concepts(partitions)
+			return 666 # TODO - remove
+			
+			#
+			# NOTE: If a partition ends up being empty, there can be no
+			#	concept vector for it (norm of 0 vector is undefined)...
+			#	Can an empty partition happen? If so, how to deal with it?
+			#
+		
+		print(concepts)
 		return 0
 	
 	
-	def randomize_partitions(self, k):
-		"""
-		Create a set of k partitions with the documents randomly
-		distributed to a cluster. Maintains as much distribution equality
-		between the partitions as possible.
-		TODO: not random; splits up by order docs were scanned in
-		"""
-		num_per_partition = int(self.reader.num_docs / k)
-		for pindex in range(k):
-			partition_vecs = []
-			partition_size = num_per_partition
-			if pindex == k-1:
-				partition_size = partition_size + (self.reader.num_docs % k)
-			for num in range(partition_size):
-				num += (pindex * (k-1))
-				partition_vecs.append(self.reader.doc_vecs[num])
-			self.partitions.append(partition_vecs)
-		#for p in self.partitions:
-		#	print(p)
+	def get_concepts(self, partitions):
+		"""Returns a set of concept Vectors, one for each partition."""
+		concepts = []
+		for p in partitions:
+			concepts.append(self.compute_concept(p))
+		return concepts
 	
 	
 	def compute_concept(self, p):
@@ -86,6 +107,29 @@ class SPKMeans():
 		cv = cv.norm()
 		
 		return cv
+	
+	
+	def randomize_partitions(self, k):
+		"""
+		Create a set of k partitions with the documents randomly
+		distributed to a cluster. Maintains as much distribution equality
+		between the partitions as possible.
+		Returns the set of partitions.
+		TODO: not random; splits up by order docs were scanned in
+		"""
+		partitions = []
+		num_per_partition = int(self.num_docs / k)
+		for pindex in range(k):
+			partition_vecs = []
+			partition_size = num_per_partition
+			if pindex == k-1:
+				partition_size = partition_size + (self.num_docs % k)
+			for num in range(partition_size):
+				num += (pindex * (k-1))
+				partition_vecs.append(self.doc_vecs[num])
+			partitions.append(partition_vecs)
+		
+		return partitions
 ################################################################################
 
 
