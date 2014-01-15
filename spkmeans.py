@@ -43,7 +43,7 @@ class SPKMeans():
 		
 		print("Running SPKMeans clustering: {} partitions.".format(k))
 		
-		# TODO - txn scheme stuff? WTF?
+		# TODO - txn scheme
 		
 		# create first partition set and concept vectors
 		partitions = self.randomize_partitions(k)
@@ -69,7 +69,7 @@ class SPKMeans():
 				
 			# recalculate concept vectors
 			concepts = self.get_concepts(partitions)
-			return 666 # TODO - remove
+			return 123 # TODO - remove
 			
 			#
 			# NOTE: If a partition ends up being empty, there can be no
