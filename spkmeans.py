@@ -11,7 +11,10 @@
 # Implementation by Richard Teammco
 # teammco@cs.utexas.edu
 #
-# Tested with Python version 3.1.3
+# Tested with Python versions: 3.1.3, 3.2.3
+#
+# Doctest:
+#   $ python3 -m doctest spkmeans.py
 ################################################################################
 
 
@@ -19,27 +22,48 @@
 from reader import Reader
 from vector import Vector
 
+# import global modules
+import math
+
 
 ################################################################################
 # SPKMeans class
 class SPKMeans():
-	"""Docs"""
+	"""
+	Contains functions to cluster a documenting using the Spherical
+	K-Means algorithm.
+	"""
 	
 	
 	def __init__(self, reader):
-		"""Set up the reader and call it to read all of the documents."""
+		"""Sets up the reader and initializes class variables."""
 		self.reader = reader
-		self.doc_vecs = self.reader.read()
-		self.num_docs = len(self.doc_vecs)
-		self.reader.report()
+		self.doc_vecs = None
+		self.num_docs = 0
+		self.num_words = 0
 		
 
+	def read_docs(self):
+		"""Reads the documents from files into memory, and report stats."""
+		self.doc_vecs = self.reader.read()
+		self.num_docs = len(self.doc_vecs)
+		self.num_words = len(self.reader.word_list)
+		self.reader.report()
+		
+		
 	def cluster(self, k):
 		"""Run the full SPKMeans algorithm, and return the partitions."""
 		# k must be at least 2 (otherwise meaningless)
 		if k < 2:
 			print("Warning: must use at least 2 partitions. Stopping.")
-			return
+			return None
+		
+		self.read_docs()
+		
+		# number of documents must be at least 2 (otherwise meaningless)
+		if self.num_docs < 2:
+			print("Warning: must use at least 2 documents. Stopping")
+			return None
 		
 		print("Running SPKMeans clustering: {} partitions.".format(k))
 		
@@ -81,6 +105,51 @@ class SPKMeans():
 		return 0
 	
 	
+	def txn(self, doc_vec_i):
+		"""
+		Scales the given document Vector using the TXN scheme.
+		doc_vec_i[j] = t_ji * g_j * s_i
+			- (doc i, word j)
+		t_ji:	term weighting component
+			- depends on count of word j in doc i
+		g_j:	global weighting component
+			- depends on number of docs containing word j
+		s_i:	normalization component for doc i
+			= sqrt[sum(j,word_count):(t_ji * g_j)^2]
+		
+		*** TESTING: ***
+		###### Set up class:
+		>>> s = SPKMeans(None)
+		>>> s.num_words = 5
+		
+		###### Test vectors:
+		>>> v = [1,2,3,0,0]
+		>>> s.txn(v)
+		>>> print(v)
+		[0,0,0,0]
+		>>> v = [0,0,2,3,4]
+		>>> s.txn(v)
+		>>> print(v)
+		[0,0,0,0]
+		"""
+		# calculate s_i (normalization component) for vector (i):
+		#	= sqrt[sum(j,word_count):(t_ji * g_j)^2]
+		sum_v = 0
+		for j in range(self.num_words):
+			t_ji = doc_vec_i[j] # term weighting component
+			g_j = 1 # global weighting component (TODO - ignored)
+			sum_v += (t_ji*g_j)*(t_ji*g_j) # = math.pow((t_ji*g_j), 2)
+		s_i = math.sqrt(sum_v)
+		print(s_i)
+		
+		# calculate the new vector values for vector (i):
+		#	doc_vec_i[j] = t_ji * g_j * s_i
+		for j in range(self.num_words):
+			t_ji = doc_vec_i[j]
+			g_j = 1
+			doc_vec_i[j] = t_ji * g_j * s_i
+		
+		
 	def get_concepts(self, partitions):
 		"""Returns a set of concept Vectors, one for each partition."""
 		concepts = []
@@ -96,7 +165,7 @@ class SPKMeans():
 		document Vector.
 		"""
 		# computer sum of all vectors in partition p
-		cv = Vector(len(self.reader.word_list))
+		cv = Vector(self.num_words)
 		for doc_v in p:
 			cv += doc_v
 			
@@ -133,29 +202,21 @@ class SPKMeans():
 ################################################################################
 
 
-# define documents to be used and number of clusters
-# TODO - docs and number of clusters as parameters
-NUM_CLUSTERS = 2
-docs = ['one.txt', 'x', 'two.txt', 'three.txt']
-		#'long1.txt', 'long2.txt', 'long3.txt']
-
 # start here
-if __name__ == "__main__":
+def main():
+	# define documents to be used and number of clusters
+	# TODO - docs and number of clusters as parameters
+	NUM_CLUSTERS = 2
+	docs = ['one.txt', 'x', 'two.txt', 'three.txt']
+			#'long1.txt', 'long2.txt', 'long3.txt']
+	
+	# set up reader and run SPKMeans clustering
 	reader = Reader(docs)
 	clusters = SPKMeans(reader).cluster(NUM_CLUSTERS)
 	print(clusters)
-	
 
-#	(1) Start with arbitrary partitioning 0: {ℼ(0)j}kj=1.
-#		{c(0)j}kj=1 denotes concept vectors associated with given partitioning 0.
-#		Set t = 0 (index of iteration).
-#	(2) ∀xi (1 to n), find concept vector closest in cosine similarity to xi.
-#		Compute new partitioning {ℼ(t+1)j}kj=1 induced by old concept vectors {c(t)j}kj=1.
-#		“ℼ(t+1)j is the set of all document vectors closest to the concept vector c(t)j.”
-#		- if doc vector closest to more than one, assign it randomly to one of the clusters.
-#	(3) Compute new concept vectors for (t+1):
-#		c(t+1)j = m(t+1)j / || m(t+1)j ||, 1 ≤ j ≤ k.						( 8 )
-#		m(t+1)j = centroid or mean of document vectors in cluster ℼ(t+1)j.
-#	(4) 	If stopping criterion met: set ℼ*j = ℼ(t+1)j and c*j = c(t+1)j (for all 1 ≤ j ≤ k). EXIT.
-#		Else: t++; GOTO step_2.
-#		stopping criterion may be difference in Q at t and t+1 <= threshold.
+
+main()
+
+
+#
