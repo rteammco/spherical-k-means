@@ -53,6 +53,7 @@ class SPKMeans():
 		
 	def cluster(self, k):
 		"""Run the full SPKMeans algorithm, and return the partitions."""
+		
 		# k must be at least 2 (otherwise meaningless)
 		if k < 2:
 			print("Warning: must use at least 2 partitions. Stopping.")
@@ -66,6 +67,10 @@ class SPKMeans():
 			return None
 		
 		print("Running SPKMeans clustering: {} partitions.".format(k))
+		
+		# normalize the document vectors
+		for doc_v in self.doc_vecs:
+			doc_v.normalize()
 		
 		# TODO - txn scheme
 		
@@ -173,7 +178,7 @@ class SPKMeans():
 		cv *= (1/len(p))
 		
 		# computer the norm of the mean vector
-		cv = cv.norm()
+		cv.normalize()
 		
 		return cv
 	

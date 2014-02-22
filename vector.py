@@ -32,6 +32,11 @@ class Vector():
 			self.array = [val] * size
 		else:
 			self.array = []
+		
+		# optimizations: if marked as modified (true), norm and other values
+		#	must be re-calculated when used.
+		self.modified = True
+		self.norm_val = 0
 	
 	
 	@staticmethod
@@ -46,12 +51,14 @@ class Vector():
 		"""Set the contents of this Vector to the given array."""
 		self.array = array
 		self.size = len(self.array)
+		self.modified = True
 	
 	
 	def append(self, val):
 		"""Inserts "val" to the end of this vector. Increments size."""
 		self.array.append(val)
 		self.size += 1
+		self.modified = True
 	
 	
 	def __getitem__(self, index): # [] get operator
@@ -68,6 +75,7 @@ class Vector():
 		Causes a regular list error if index is out of bounds.
 		"""
 		self.array[index] = val
+		self.modified = True
 		
 	
 	def __len__(self): # len() operator
@@ -76,10 +84,16 @@ class Vector():
 	
 	
 	def __add__(self, other): # + operator
-		"""Adds Vector "other" to this Vector and returns the result."""
+		"""
+		Adds Vector "other" to this Vector and returns the result.
+		Both vectors are expected to be the same size (length), otherwise
+		an AssertionError will be thrown.
+		"""
+		assert other.size == self.size
 		result = Vector.from_array(self.array)
 		for i in range(self.size):
 			result[i] += other[i]
+		self.modified = True
 		return result
 	__radd__ = __add__
 	
@@ -96,7 +110,10 @@ class Vector():
 	def dot(self, other):
 		"""
 		Returns the dot product NUMBER value of this Vector with "other".
+		Both vectors are expected to be the same size (length), otherwise
+		an AssertionError will be thrown.
 		"""
+		assert other.size == self.size
 		result = 0
 		for i in range(self.size):
 			result += self.array[i] * other[i]
@@ -104,16 +121,27 @@ class Vector():
 		
 	
 	def norm(self):
-		"""Returns a normalized version of this Vector."""
-		result = Vector.from_array(self.array)
+		"""Returns the norm of this Vector."""
+		#result = Vector.from_array(self.array)
 		n = 0
 		for item in self.array:
 			n += item * item
 		n = math.sqrt(n)
-		for i in range(self.size):
-			result[i] /= n
-		return result
+		#for i in range(self.size):
+		#	result[i] /= n
+		#return result
+		return n
 	
+	
+	def normalize(self):
+		"""
+		Sets this vector to a normalized version of itself.
+		WARNING: All old data is lost after running this function.
+		"""
+		n = self.norm()
+		for i in range(self.size):
+			self.array[i] /= n
+		
 	
 	def __str__(self):
 		"""Returns a string representation of this Vector."""
