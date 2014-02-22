@@ -103,6 +103,7 @@ class Vector():
 		result = Vector.from_array(self.array)
 		for i in range(self.size):
 			result[i] *= scalar
+		self.modified = True
 		return result
 	__rmul__ = __mul__
 	
@@ -122,15 +123,14 @@ class Vector():
 	
 	def norm(self):
 		"""Returns the norm of this Vector."""
-		#result = Vector.from_array(self.array)
-		n = 0
-		for item in self.array:
-			n += item * item
-		n = math.sqrt(n)
-		#for i in range(self.size):
-		#	result[i] /= n
-		#return result
-		return n
+		if self.modified:
+			n = 0
+			for item in self.array:
+				n += item * item
+			n = math.sqrt(n)
+			self.norm_val = n
+			self.modified = False
+		return self.norm_val
 	
 	
 	def normalize(self):
@@ -141,6 +141,7 @@ class Vector():
 		n = self.norm()
 		for i in range(self.size):
 			self.array[i] /= n
+		self.modified = True
 		
 	
 	def __str__(self):
