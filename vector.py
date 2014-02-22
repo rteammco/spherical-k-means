@@ -142,6 +142,18 @@ class Vector():
 		for i in range(self.size):
 			self.array[i] /= n
 		self.modified = True
+	
+	
+	def get_sum(self, exponent = 1):
+		"""
+		Returns the sum of all components of this vector.
+		If exponent (optional parameter) is provided, each element will be
+		raised to that power before contributing to the sum.
+		"""
+		vec_sum = 0
+		for item in self.array:
+			vec_sum += (item ** exponent)
+		return vec_sum
 		
 	
 	def __str__(self):

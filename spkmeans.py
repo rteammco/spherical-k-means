@@ -68,11 +68,13 @@ class SPKMeans():
 		
 		print("Running SPKMeans clustering: {} partitions.".format(k))
 		
-		# normalize the document vectors
+		# normalize the document vectors, and apply the txn scheme
 		for doc_v in self.doc_vecs:
 			doc_v.normalize()
+			doc_v *= math.sqrt(doc_v.get_sum()) # txn
 		
-		# TODO - txn scheme
+		# apply TXN scheme to the document vectors
+		#self.apply_txn_scheme()
 		
 		# create first partition set and concept vectors
 		partitions = self.randomize_partitions(k)
