@@ -80,36 +80,56 @@ class SPKMeans():
 		partitions = self.randomize_partitions(k)
 		concepts = self.get_concepts(partitions)
 		
-		while True: # while delta_quality < q_threshold:
+		q = self.quality(partitions, concepts)
+		dQ = 100
+		qThresh = 0.01
+		t = 0
+		# while change in quality is large enough, or within finite time,
+		#	compute a better partitioning:
+		while dQ > qThresh and t < 200:
 			partitions = [[]] * k
 			
-			for i in range(self.num_docs): # for each document
+			for doc_v in self.doc_vecs: # for each document
 				#find closest doc vector of cosine similarity
-				closest = -1
-				closest_val = 0
-				for cv_index in range(k):
-					scrap = concepts[cv_index]
-					dot_p = self.doc_vecs[i].dot(concepts[cv_index])
-					if closest == -1 or dot_p < closest_val:
-						closest = cv_index
-						closest_val = dot_p
+				v_norm = doc_v.norm()
+				
+				closest = 1
+				closest_val = doc_v.dot(concepts[0])
+				closest_val /= (v_norm * concepts[0].norm())
+				
+				for i in range(1, k):
+					val = doc_v.dot(concepts[i])
+					val /= (v_norm * concepts[i].norm())
+					
+					if val > closest_val:
+						closest = i
+						closest_val = val
 						
 				# put the document Vector into the partition associated
 				#	with the closest concept Vector
-				partitions[closest].append(self.doc_vecs[i])
+				partitions[closest].append(doc_v)
 				
 			# recalculate concept vectors
 			concepts = self.get_concepts(partitions)
-			return 123 # TODO - remove
 			
-			#
-			# NOTE: If a partition ends up being empty, there can be no
-			#	concept vector for it (norm of 0 vector is undefined)...
-			#	Can an empty partition happen? If so, how to deal with it?
-			#
-		
-		print(concepts)
-		return 0
+			# compute quality of the new partition
+			lastQ = q
+			q = self.quality(partitions, concepts)
+			dQ = abs(q - lastQ)
+			t += 1
+			print("lastQ =",lastQ,"q =",q,"dQ =",dQ)
+
+		# return the partitions and associated concept vectors
+		return partitions, concepts
+	
+	
+	def quality(self, partitions, concepts):
+		"""Compute and return the quality of the given partitions."""
+		q = 0
+		for i in range(len(partitions)):
+			sum_v = Vector.sum_vectors(partitions[i])
+			q += sum_v.dot(concepts[i])
+		return q
 	
 	
 	def txn(self, doc_vec_i):
@@ -219,8 +239,8 @@ def main():
 	
 	# set up reader and run SPKMeans clustering
 	reader = Reader(docs)
-	clusters = SPKMeans(reader).cluster(NUM_CLUSTERS)
-	print(clusters)
+	p, c = SPKMeans(reader).cluster(NUM_CLUSTERS)
+	print(p,c)
 
 
 main()

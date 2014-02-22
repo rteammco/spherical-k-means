@@ -47,6 +47,21 @@ class Vector():
 		return new_vec
 	
 	
+	@staticmethod
+	def sum_vectors(vec_list):
+		"""
+		STATIC: returns the sum of the given list of vectors.
+		The list must contain at least one vector, and all given vectors
+		must be the same size, otherwise an AssertionError will be thrown.
+		"""
+		assert len(vec_list) > 0
+		vec_sum = Vector(vec_list[0].size)
+		for vec in vec_list:
+			assert vec.size == vec_sum.size
+			vec_sum += vec
+		return vec_sum
+	
+	
 	def set_array(self, array):
 		"""Set the contents of this Vector to the given array."""
 		self.array = array
