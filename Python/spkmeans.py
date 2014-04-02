@@ -18,7 +18,7 @@
 ################################################################################
 
 
-# import Reader module
+# import custom module
 from reader import Reader
 from vector import Vector
 
