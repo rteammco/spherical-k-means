@@ -7,6 +7,15 @@ function [ D, words ] = readDocsFromFile( docFile, vocabFile )
 % readDocs: Reads documents from the given document file and vocabulary
 %   file and returns them as a sparse matrix (D) whose columns represent
 %   documents.
+% FILE FORMAT:
+%   <top of file>
+%       number of documents
+%       number of unique words
+%       number of non-zero words in the collection
+%       docID wordID count
+%       docID wordID count
+%       ...
+%   <end of file>
 % PARAMETERS:
 %   docFile - path to file containing the document list.
 %   vocabFile - path to a vocabulary (dictionary) file containing a
@@ -28,12 +37,14 @@ function [ D, words ] = readDocsFromFile( docFile, vocabFile )
     end
     
     % Try to open the vocabulary file:
+    hasVocab = 1;
     if ~exist(vocabFile, 'file')
         disp(['ERROR: file not found: ' vocabFile]);
-        return;
+        disp('Will continue without it.');
+        hasVocab = 0;
     end
     vocabFH = fopen(vocabFile);
-    if ~vocabFH
+    if hasVocab && ~vocabFH
         disp(['ERROR: could not open: ' vocabFile]);
         return;
     end
@@ -49,14 +60,16 @@ function [ D, words ] = readDocsFromFile( docFile, vocabFile )
     % Read in the vocabulary words:
     words = cell(1, wc);
     curWord = 1;
-    while ~feof(vocabFH)
+    while hasVocab && ~feof(vocabFH)
         word = fscanf(vocabFH, '%s', 1);
         if ~isempty(word)
             words{curWord} = word;
             curWord = curWord + 1;
         end
     end
-    fclose(vocabFH);
+    if hasVocab
+        fclose(vocabFH);
+    end
     
     
     % Read in the document matrix:

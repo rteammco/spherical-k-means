@@ -1,5 +1,7 @@
 *.pyc
 *.txt
+*.swp
+matlab_news20
 __pycache__
 
 Matlab/MATLAB/*

@@ -8,9 +8,6 @@
 # means of finding patterns in large amounts of data.
 # The number of clusters, K, is provided as a parameter.
 #
-# Implementation by Richard Teammco
-# teammco@cs.utexas.edu
-#
 # Tested with Python versions: 3.1.3, 3.2.3
 #
 # Doctest:
