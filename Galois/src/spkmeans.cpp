@@ -99,7 +99,9 @@ float cosineSimilarity(float *dv, float *cv, int wc)
 // of document vectors, and the concept vector will be allocated and populated.
 float* computeConcept(float **partition, int p_size, int wc)
 {
-    float *cv = vec_sum(partition, wc, p_size);
+    cout << " BEFORE vec_sum " << endl;
+    float *cv = vec_sum(partition, wc, p_size); // TODO crashes here
+    cout << " AFTER vec_sum " << endl;
     vec_multiply(cv, wc, (1.0 / wc));
     vec_divide(cv, wc, vec_norm(cv, wc));
     return cv;
@@ -154,6 +156,7 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
         iterations++;
 
         // compute new partitions based on old concept vectors
+        cout << "Calculating new partitions..." << endl;
         vector<float*> *new_partitions = new vector<float*>[k];
         for(int i=0; i<k; i++)
             new_partitions[i] = vector<float*>();
@@ -171,16 +174,19 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
         }
 
         // transfer the new partitions to the partitions array
+        cout << "Copying new partitions to partition array..." << endl;
         clearPartitions(partitions, k);
         for(int i=0; i<k; i++)
             partitions[i] = new_partitions[i].data();
 
         // compute new concept vectors
+        cout << "Computing new concept vectors..." << endl;
         clearConcepts(concepts, k);
         for(int i=0; i<k; i++)
             concepts[i] = computeConcept(partitions[i], p_sizes[i], wc);
 
         // compute quality of new partitioning
+        cout << "Computing new partition quality..." << endl;
         float n_quality = computeQuality(partitions, p_sizes, concepts, k, wc);
         dQ = n_quality - quality;
         quality = n_quality;
