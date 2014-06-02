@@ -15,15 +15,16 @@
 #include "vectors.h"
 
 
-#define DEFAULT_K 2;
-#define DEFAULT_THREADS 2;
+#define DEFAULT_K 2
+#define DEFAULT_THREADS 2
+#define Q_THRESHOLD 0.001
 
 
 using namespace std;
 
 
 
-// Debug: prints the vector to std out.
+// Debug: prints the given vector (array) to std out.
 void printVec(float *vec, int size)
 {
     for(int i=0; i<size; i++)
@@ -86,7 +87,7 @@ float computeQuality(float ***partitions, int *p_sizes, float **concepts,
 
 
 
-// Computes the cosine similarity value of the two given vectors.
+// Computes the cosine similarity value of the two given vectors (dv and cv).
 float cosineSimilarity(float *dv, float *cv, int wc)
 {
     return vec_dot(dv, cv, wc) / (vec_norm(dv, wc) * vec_norm(cv, wc));
@@ -110,9 +111,6 @@ float* computeConcept(float **partition, int p_size, int wc)
 // clusters the data into k partitions.
 void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 {
-    // TODO - make these parameters
-    float qThresh = 0.001;
-
     // apply the TXN scheme on the document vectors (normalize them)
     txnScheme(doc_matrix, dc, wc);
 
@@ -140,16 +138,6 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 
         base = base + split;
     }
-    /*for(int i=0; i<k; i++) {
-        cout << "Partition " << i+1 << ": " << endl;
-        for(int j=0; j<p_sizes[i]; j++) {
-            cout << "   ";
-            for(int a=0; a<wc; a++) {
-                cout << partitions[i][j][a] << " ";
-            }
-            cout << endl;
-        }
-    }*/
 
     // compute concept vectors
     for(int i=0; i<k; i++)
@@ -160,11 +148,15 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
     cout << "Initial quality: " << quality << endl;
 
     // do spherical k-means loop
-    float dQ = qThresh * 10;
-    while(dQ > qThresh) {
+    float dQ = Q_THRESHOLD * 10;
+    int iterations = 0;
+    while(dQ > Q_THRESHOLD) {
+        iterations++;
 
         // compute new partitions based on old concept vectors
-        //clearPartitions(partitions, k);
+        vector<float*> *new_partitions = new vector<float*>[k];
+        for(int i=0; i<k; i++)
+            new_partitions[i] = vector<float*>();
         for(int i=0; i<dc; i++) {
             int cIndx = 0;
             float cVal = cosineSimilarity(doc_matrix[i], concepts[0], wc);
@@ -175,7 +167,13 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
                     cIndx = j;
                 }
             }
+            new_partitions[cIndx].push_back(doc_matrix[i]);
         }
+
+        // transfer the new partitions to the partitions array
+        clearPartitions(partitions, k);
+        for(int i=0; i<k; i++)
+            partitions[i] = new_partitions[i].data();
 
         // compute new concept vectors
         clearConcepts(concepts, k);
@@ -189,19 +187,11 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
         cout << "Quality: " << quality << " (+" << dQ << ")" << endl;
     }
 
-    cout << "Done." << endl;
-
-    //clearPartitions(partitions, k);
-    //clearConcepts(concepts, k);
-
-    /*for(int i=0; i<dc; i++) {
-        cout << "[ ";
-        for(int j=0; j<wc; j++)
-            cout << doc_matrix[i][j] << " ";
-        cout << "]" << endl;
-    }*/
+    cout << "Done after " << iterations << " iterations." << endl;
 
     // clean up everything - TODO: maybe return some of these
+    clearPartitions(partitions, k);
+    clearConcepts(concepts, k);
     delete partitions;
     delete concepts;
 }
