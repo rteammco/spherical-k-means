@@ -23,11 +23,13 @@ void vec_divide(float *vec, int size, float value)
 
 
 
-// Normalize a vector (make it into a unit vector).
+// Normalize a vector (make it into a unit vector). If the given vector is
+// a zero vector, it is unchanged.
 void vec_normalize(float *vec, int size)
 {
     float norm = vec_norm(vec, size);
-    vec_divide(vec, size, norm);
+    if(norm > 0)
+        vec_divide(vec, size, norm);
 }
 
 

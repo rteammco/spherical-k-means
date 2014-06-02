@@ -41,7 +41,7 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 
 /* Read the document data file into a spare matrix (2D array) format).
  * This function assumes that the given file name is valid.
- * Returns the 2D array (sparse matrix).
+ * Returns the 2D array (sparse matrix) - columns are document vectors.
  * FILE FORMAT:
  *  <top of file>
  *      number of documents
@@ -52,19 +52,19 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
  *      ...
  *  <end of file>
  */
-float** loadFile(const char *fname)
+float** loadFile(const char *fname, int &dc, int &wc)
 {
     ifstream infile(fname);
     
     // get the number of documents and words in the data set
-    int dc, wc, nzwc; // doc. count, word count, non-zero word count
+    int nzwc; // non-zero word count (ignored)
     infile >> dc >> wc >> nzwc;
 
     // set up the matrix and initialize it to all zeros
-    float **mat = new float*[wc];
-    for(int i=0; i<wc; i++) {
-        mat[i] = new float[dc];
-        memset(mat[i], 0, dc * sizeof(*mat[i]));
+    float **mat = new float*[dc];
+    for(int i=0; i<dc; i++) {
+        mat[i] = new float[wc];
+        memset(mat[i], 0, wc * sizeof(*mat[i]));
     }
 
     // populate the matrix from the data file
@@ -74,7 +74,7 @@ float** loadFile(const char *fname)
         int doc_id, word_id, count;
         if(!(iss >> doc_id >> word_id >> count))
             continue;
-        mat[word_id-1][doc_id-1] = count;
+        mat[doc_id-1][word_id-1] = count;
     }
 
     return mat;
@@ -124,10 +124,11 @@ int main(int argc, char **argv)
          << " (" << num_threads << " threads)." << endl;
 
     // set up the sparse matrix
-    float **D = loadFile(fname.c_str());
+    int dc, wc;
+    float **D = loadFile(fname.c_str(), dc, wc);
 
     // run spherical k-means on the given sparse matrix D
-    runSPKMeans(D, k);
+    runSPKMeans(D, k, dc, wc);
 
     return 0;
 }
