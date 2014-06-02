@@ -23,6 +23,16 @@ using namespace std;
 
 
 
+// Debug: prints the vector to std out.
+void printVec(float *vec, int size)
+{
+    for(int i=0; i<size; i++)
+        cout << vec[i] << " ";
+    cout << endl;
+}
+
+
+
 // Applies the TXN scheme to each document vector of the given matrix.
 // TXN effectively just normalizes each of the document vectors.
 void txnScheme(float **doc_matrix, int dc, int wc)
@@ -33,8 +43,66 @@ void txnScheme(float **doc_matrix, int dc, int wc)
 
 
 
-// void computeConcepts();
-// void computeQuality();
+// Cleans partition memory, resetting the partitions list.
+void clearPartitions(float ***partitions, int k)
+{
+    for(int i=0; i<k; i++)
+        delete partitions[i];
+}
+
+
+
+// Cleans concept vector memory, resetting the concepts list.
+void clearConcepts(float **concepts, int k)
+{
+    for(int i=0; i<k; i++)
+        delete concepts[i];
+}
+
+
+
+// Returns the quality of the given partition by doing a dot product against
+// its given concept vector.
+float computeQuality(float **partition, int p_size, float *concept, int wc)
+{
+    float *sum_p = vec_sum(partition, wc, p_size);
+    float quality = vec_dot(sum_p, concept, wc);
+    delete sum_p;
+    return quality;
+}
+
+
+
+// Returns the total quality of all partitions by summing the qualities of
+// each individual partition.
+float computeQuality(float ***partitions, int *p_sizes, float **concepts,
+    int k, int wc)
+{
+    float quality = 0;
+    for(int i=0; i<k; i++)
+        quality += computeQuality(partitions[i], p_sizes[i], concepts[i], wc);
+    return quality;
+}
+
+
+
+// Computes the cosine similarity value of the two given vectors.
+float cosineSimilarity(float *dv, float *cv, int wc)
+{
+    return vec_dot(dv, cv, wc) / (vec_norm(dv, wc) * vec_norm(cv, wc));
+}
+
+
+
+// Computes the concept vector of the given partition. A partition is an array
+// of document vectors, and the concept vector will be allocated and populated.
+float* computeConcept(float **partition, int p_size, int wc)
+{
+    float *cv = vec_sum(partition, wc, p_size);
+    vec_multiply(cv, wc, (1.0 / wc));
+    vec_divide(cv, wc, vec_norm(cv, wc));
+    return cv;
+}
 
 
 
@@ -48,10 +116,9 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
     // apply the TXN scheme on the document vectors (normalize them)
     txnScheme(doc_matrix, dc, wc);
 
-    cout << "Running spherical K-means." << endl;
-
-    float **partitions = new float*[k];
-    float *partition_qs = new float[k];
+    // initialize arrays
+    float ***partitions = new float**[k];
+    int p_sizes[k];
     float **concepts = new float*[k];
 
     // create the first arbitrary partitioning
@@ -64,10 +131,79 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
             top = dc;
 
         int p_size = top - base + 1;
-        cout << p_size << endl;
+        p_sizes[i] = p_size;
+        cout << "Created new partition of size " << p_size << endl;
+
+        partitions[i] = new float*[p_size];
+        for(int j=0; j<p_size; j++)
+            partitions[i][j] = doc_matrix[base + j - 1];
 
         base = base + split;
     }
+    /*for(int i=0; i<k; i++) {
+        cout << "Partition " << i+1 << ": " << endl;
+        for(int j=0; j<p_sizes[i]; j++) {
+            cout << "   ";
+            for(int a=0; a<wc; a++) {
+                cout << partitions[i][j][a] << " ";
+            }
+            cout << endl;
+        }
+    }*/
+
+    // compute concept vectors
+    for(int i=0; i<k; i++)
+        concepts[i] = computeConcept(partitions[i], p_sizes[i], wc);
+
+    // compute initial quality of the partitions
+    float quality = computeQuality(partitions, p_sizes, concepts, k, wc);
+    cout << "Initial quality: " << quality << endl;
+
+    // do spherical k-means loop
+    float dQ = qThresh * 10;
+    while(dQ > qThresh) {
+
+        // compute new partitions based on old concept vectors
+        //clearPartitions(partitions, k);
+        for(int i=0; i<dc; i++) {
+            int cIndx = 0;
+            float cVal = cosineSimilarity(doc_matrix[i], concepts[0], wc);
+            for(int j=1; j<k; j++) {
+                float new_cVal = cosineSimilarity(doc_matrix[i], concepts[j], wc);
+                if(new_cVal > cVal) {
+                    cVal = new_cVal;
+                    cIndx = j;
+                }
+            }
+        }
+
+        // compute new concept vectors
+        clearConcepts(concepts, k);
+        for(int i=0; i<k; i++)
+            concepts[i] = computeConcept(partitions[i], p_sizes[i], wc);
+
+        // compute quality of new partitioning
+        float n_quality = computeQuality(partitions, p_sizes, concepts, k, wc);
+        dQ = quality - n_quality;
+        quality = n_quality;
+        cout << "Quality: " << quality << " (+" << dQ << ")" << endl;
+    }
+
+    cout << "Done." << endl;
+
+    //clearPartitions(partitions, k);
+    //clearConcepts(concepts, k);
+
+    /*for(int i=0; i<dc; i++) {
+        cout << "[ ";
+        for(int j=0; j<wc; j++)
+            cout << doc_matrix[i][j] << " ";
+        cout << "]" << endl;
+    }*/
+
+    // clean up everything - TODO: maybe return some of these
+    delete partitions;
+    delete concepts;
 }
 
 

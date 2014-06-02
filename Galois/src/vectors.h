@@ -8,7 +8,7 @@
 // Returns the norm of the given vector (array).
 float vec_norm(float *vec, int size)
 {
-    int squared_sum = 0;
+    float squared_sum = 0;
     for(int i=0; i<size; i++)
         squared_sum += vec[i] * vec[i];
     return sqrt(squared_sum);
@@ -22,6 +22,31 @@ float vec_sum(float *vec, int size)
     float sum = 0;
     for(int i=0; i<size; i++)
         sum += vec[i];
+    return sum;
+}
+
+
+
+// Returns the dot product of the two given vectors.
+float vec_dot(float *vec1, float *vec2, int size)
+{
+    float dotp = 0;
+    for(int i=0; i<size; i++)
+        dotp += vec1[i] * vec2[i];
+    return dotp;
+}
+
+
+
+// [return] Returns a new vector that is the sum of the given list of vectors.
+float* vec_sum(float **vecs, int size, int num_vecs)
+{
+    float *sum = new float[size];
+    for(int i=0; i<size; i++) {
+        sum[i] = 0;
+        for(int j=0; j<num_vecs; j++)
+            sum[i] += vecs[j][i];
+    }
     return sum;
 }
 
