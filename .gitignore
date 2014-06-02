@@ -2,6 +2,7 @@
 *.txt
 *.swp
 matlab_news20
+spkmeans
 __pycache__
 
 Matlab/MATLAB/*
