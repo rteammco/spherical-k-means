@@ -7,9 +7,12 @@
 
 #include <fstream>
 #include <iostream>
+#include <math.h>
 #include <string>
 
 #include "Galois/Galois.h"
+
+#include "vectors.h"
 
 
 #define DEFAULT_K 2;
@@ -20,8 +23,17 @@ using namespace std;
 
 
 
-void runSPKMeans(int **D, unsigned int k)
+// Runs the spherical k-means algorithm on the given sparse matrix D and
+// clusters the data into k partitions.
+void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 {
+    // TODO - make these parameters
+    float qThresh = 0;
+
+    // normalize each of the document vectors
+    for(int i=0; i<dc; i++)
+        vec_normalize(doc_matrix[i], wc);
+
     cout << "Running spherical K-means." << endl;
 }
 
@@ -40,7 +52,7 @@ void runSPKMeans(int **D, unsigned int k)
  *      ...
  *  <end of file>
  */
-int** loadFile(const char *fname)
+float** loadFile(const char *fname)
 {
     ifstream infile(fname);
     
@@ -49,9 +61,9 @@ int** loadFile(const char *fname)
     infile >> dc >> wc >> nzwc;
 
     // set up the matrix and initialize it to all zeros
-    int **mat = new int*[wc];
+    float **mat = new float*[wc];
     for(int i=0; i<wc; i++) {
-        mat[i] = new int[dc];
+        mat[i] = new float[dc];
         memset(mat[i], 0, dc * sizeof(*mat[i]));
     }
 
@@ -112,7 +124,7 @@ int main(int argc, char **argv)
          << " (" << num_threads << " threads)." << endl;
 
     // set up the sparse matrix
-    int **D = loadFile(fname.c_str());
+    float **D = loadFile(fname.c_str());
 
     // run spherical k-means on the given sparse matrix D
     runSPKMeans(D, k);
