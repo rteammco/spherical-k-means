@@ -23,18 +23,51 @@ using namespace std;
 
 
 
+// Applies the TXN scheme to each document vector of the given matrix.
+// TXN effectively just normalizes each of the document vectors.
+void txnScheme(float **doc_matrix, int dc, int wc)
+{
+    for(int i=0; i<dc; i++)
+        vec_normalize(doc_matrix[i], wc);
+}
+
+
+
+// void computeConcepts();
+// void computeQuality();
+
+
+
 // Runs the spherical k-means algorithm on the given sparse matrix D and
 // clusters the data into k partitions.
 void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 {
     // TODO - make these parameters
-    float qThresh = 0;
+    float qThresh = 0.001;
 
-    // normalize each of the document vectors
-    for(int i=0; i<dc; i++)
-        vec_normalize(doc_matrix[i], wc);
+    // apply the TXN scheme on the document vectors (normalize them)
+    txnScheme(doc_matrix, dc, wc);
 
     cout << "Running spherical K-means." << endl;
+
+    float **partitions = new float*[k];
+    float *partition_qs = new float[k];
+    float **concepts = new float*[k];
+
+    // create the first arbitrary partitioning
+    int split = floor(dc / k);
+    cout << "Split = " << split << endl;
+    int base = 1;
+    for(int i=0; i<k; i++) {
+        int top = base + split - 1;
+        if(i == k-1)
+            top = dc;
+
+        int p_size = top - base + 1;
+        cout << p_size << endl;
+
+        base = base + split;
+    }
 }
 
 

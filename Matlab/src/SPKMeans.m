@@ -17,11 +17,8 @@ function [ P, cVs ] = SPKMeans( D, k )
     
 
     [~, num_docs] = size(D);
-    for i = 1:num_docs 
-        D(:,i) = D(:,i)/norm(D(:,i));
-    end
     
-    % Apply TNX or TFN scheme:
+    % Apply TNX (normalize) [or TFN] scheme:
     D = txnScheme(D);
     
     
@@ -172,7 +169,7 @@ function [ D ] = txnScheme( D )
 % PARAMETERS:
 %   D - un-adjusted document matrix D.
 % RETURNS:
-%   D - adjusted document matrix D.
+%   D - adjusted document matrix D (normalized document vectors).
 %
 % txn/tfn scheme algorithm (for each document vector x_i):
 %      d = number of words in vector
@@ -188,38 +185,7 @@ function [ D ] = txnScheme( D )
     [~, num_docs] = size(D);
     
     for i = 1:num_docs
-
-        % Calculate s_i for this vector:
-        D(:,i) = D(:,i) * sqrt(sum(D(:,i).^2));
-        
-    % NOTE: for tfn, construct a vector for d_j (# of documents
-    %   each word j appears in. Then, multiply:
-    % D(:,i) = times(D(:,i), d_vector) * s_i
-        
-        %vec_i = D(:,i);
-        %tempv = vec_i.^2;
-        %sum_i = sum(tempv);
-        %s_i = sqrt(sum_i);
-        %D(:,i) = D(:,i) * s_i
-        
-        %sum_i = 0;
-        %for j = 1:wc
-        %    f_ji = D(j, i);
-        %    t_ji = f_ji;
-        %    g_j = 1;
-        %    %sum_i = sum_i + power((t_ji * g_j), 2);
-        %    p = (t_ji * g_j);
-        %    sum_i = sum_i + (p * p);
-        %end
-        %s_i = sqrt(sum_i);
-
-        % calculate vector values
-        %for j = 1:wc
-        %    t_ji = vectors{i}(j); % count of word j in document i
-        %    q_j = 1; % constant for txn
-        %    vectors{i}(j) = t_ji * q_j * s_i;
-        %end
-
+        D(:,i) = D(:,i) / norm(D(:,i));
     end
     
 end
