@@ -182,7 +182,7 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 
         // compute quality of new partitioning
         float n_quality = computeQuality(partitions, p_sizes, concepts, k, wc);
-        dQ = quality - n_quality;
+        dQ = n_quality - quality;
         quality = n_quality;
         cout << "Quality: " << quality << " (+" << dQ << ")" << endl;
     }
@@ -244,7 +244,8 @@ float** loadFile(const char *fname, int &dc, int &wc)
 // Takes argc and argv from program input and parses the parameters to set
 // values for k (number of clusters) and num_threads (the maximum number
 // of threads for Galois to use).
-void processArgs(int argc, char **argv,
+// Returns -1 on fail (provided file doesn't exist), else 0 on success.
+int processArgs(int argc, char **argv,
     string *fname, unsigned int *k, unsigned int *num_threads)
 {
     // set up file name
@@ -252,6 +253,15 @@ void processArgs(int argc, char **argv,
         *fname = string(argv[1]);
     else
         *fname = "data";
+
+    // check that the file exists - if not, error
+    ifstream test(fname->c_str());
+    if(!test.good()) {
+        cout << "Error: file \"" << *fname << "\" does not exist." << endl;
+        test.close();
+        return -1;
+    }
+    test.close();
 
     // set up size of k
     if(argc >= 3)
@@ -264,6 +274,8 @@ void processArgs(int argc, char **argv,
         *num_threads = atoi(argv[3]);
     else
         *num_threads = DEFAULT_THREADS;
+
+    return 0;
 }
 
 
@@ -274,7 +286,8 @@ int main(int argc, char **argv)
     // get file name, and set up k and number of threads
     string fname;
     unsigned int k, num_threads;
-    processArgs(argc, argv, &fname, &k, &num_threads);
+    if(processArgs(argc, argv, &fname, &k, &num_threads) != 0)
+        return -1;
 
     // tell Galois the max thread count
     Galois::setActiveThreads(num_threads);
