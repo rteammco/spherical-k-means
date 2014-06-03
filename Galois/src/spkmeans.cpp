@@ -1,7 +1,7 @@
 /* File: spkmeans.cpp
  *
  * A parallel implementation of the Spherical K-Means algorithm using the
- * Galois library (URL_HERE).
+ * Galois library (http://iss.ices.utexas.edu/?p=projects/galois).
  */
 
 
@@ -17,6 +17,7 @@
 #include "vectors.h"
 
 
+// default parameters
 #define DEFAULT_K 2
 #define DEFAULT_THREADS 2
 #define Q_THRESHOLD 0.001
