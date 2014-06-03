@@ -225,6 +225,12 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
     cout << "Initial quality: " << quality << endl;
 
 
+    // keep track of all individual component times
+    float p_time = 0;
+    float t_time = 0;
+    float c_time = 0;
+    float q_time = 0;
+
     // do spherical k-means loop
     float dQ = Q_THRESHOLD * 10;
     int iterations = 0;
@@ -232,6 +238,8 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
         iterations++;
 
         // compute new partitions based on old concept vectors
+        Galois::Timer ptimer;
+        ptimer.start();
         vector<float*> *new_partitions = new vector<float*>[k];
         for(int i=0; i<k; i++)
             new_partitions[i] = vector<float*>();
@@ -247,23 +255,37 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
             }
             new_partitions[cIndx].push_back(doc_matrix[i]);
         }
+        ptimer.stop();
+        p_time += ptimer.get();
 
         // transfer the new partitions to the partitions array
+        Galois::Timer ttimer;
+        ttimer.start();
         clearPartitions(partitions, k);
         for(int i=0; i<k; i++) {
             partitions[i] = new_partitions[i].data();
             p_sizes[i] = new_partitions[i].size();
         }
+        ttimer.stop();
+        t_time += ttimer.get();
 
         // compute new concept vectors
+        Galois::Timer ctimer;
+        ctimer.start();
         clearConcepts(concepts, k);
         for(int i=0; i<k; i++)
             concepts[i] = computeConcept(partitions[i], p_sizes[i], wc);
+        ctimer.stop();
+        c_time += ctimer.get();
 
         // compute quality of new partitioning
+        Galois::Timer qtimer;
+        qtimer.start();
         float n_quality = computeQuality(partitions, p_sizes, concepts, k, wc);
         dQ = n_quality - quality;
         quality = n_quality;
+        qtimer.stop();
+        q_time += qtimer.get();
         cout << "Quality: " << quality << " (+" << dQ << ")" << endl;
     }
 
@@ -273,6 +295,12 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
     float time_in_ms = timer.get();
     cout << "Done in " << time_in_ms / 1000
          << " seconds after " << iterations << " iterations." << endl;
+    float total = p_time + t_time + c_time + q_time;
+    cout << "Timers (ms): " << endl
+         << "   partition [" << p_time << "] (" << (p_time/total)*100 << "%)" << endl
+         << "   p_transfer [" << t_time << "] (" << (t_time/total)*100 << "%)" << endl
+         << "   concepts [" << c_time << "] (" << (c_time/total)*100 << "%)" << endl
+         << "   quality [" << q_time << "] (" << (q_time/total)*100 << "%)" << endl;
 
 
     // return the resulting partitions and concepts in a Results struct
@@ -466,6 +494,7 @@ int main(int argc, char **argv)
     // set up the sparse matrix
     int dc, wc;
     float **D = loadDocFile(doc_fname.c_str(), dc, wc);
+    cout << dc << " documents, " << wc << " words." << endl;
 
     // run spherical k-means on the given sparse matrix D
     Results r = runSPKMeans(D, k, dc, wc);
