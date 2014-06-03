@@ -7,7 +7,9 @@
 
 #include <fstream>
 #include <iostream>
+#include <queue>
 #include <string>
+#include <vector>
 
 #include "Galois/Galois.h"
 #include "Galois/Timer.h"
@@ -118,15 +120,18 @@ struct Results
 
     // pointers to partitions and concepts
     float ***partitions;
+    int *p_sizes;
     float **concepts;
 
     // Constructor: pass in the three required values (k, wc, dc), and set
     // partition and concept vector pointers optionally.
-    Results(int k_, int dc_, int wc_, float ***ps_ = 0, float **cvs_ = 0) {
+    Results(int k_, int dc_, int wc_,
+            float ***ps_ = 0, int *psz_ = 0, float **cvs_ = 0) {
         k = k_;
         dc = dc_;
         wc = wc_;
         partitions = ps_;
+        p_sizes = psz_;
         concepts = cvs_;
     }
 
@@ -141,6 +146,10 @@ struct Results
             clearPartitions(partitions, k);
             delete partitions;
             partitions = 0;
+        }
+        if(p_sizes != 0) {
+            delete p_sizes;
+            p_sizes = 0;
         }
         if(concepts != 0) {
             clearConcepts(concepts, k);
@@ -167,7 +176,7 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 
     // initialize arrays
     float ***partitions = new float**[k];
-    int p_sizes[k];
+    int *p_sizes = new int[k];
     float **concepts = new float*[k];
 
 
@@ -253,8 +262,39 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 
 
     // return the resulting partitions and concepts in a Results struct
-    Results r(k, dc, wc, partitions, concepts);
+    Results r(k, dc, wc, partitions, p_sizes, concepts);
     return r;
+}
+
+
+
+// shows the results
+void displayResults(Results *r, int num_to_show = 10)
+{
+    // make sure num_to_show doesn't exceed the actual word count
+    if(num_to_show > r->wc)
+        num_to_show = r->wc;
+
+    // for each partition, sum the weights of each word, and show the top
+    //  words that occur in the partition:
+    for(int i=0; i<(r->k); i++) {
+        cout << "Partition #" << (i+1) << ":" << endl;
+        // sum the weights
+        float *sum = vec_sum(r->partitions[i], r->wc, r->p_sizes[i]);
+
+        // sort this sum using C++ priority queue (keeping track of indices)
+        vector<float> values(sum, sum + r->wc);
+        priority_queue<pair<float, int>> q;
+        for(int i=0; i<values.size(); i++)
+            q.push(pair<float, int>(values[i], i));
+
+        // show top num_to_show words
+        for(int i=0; i<num_to_show; i++) {
+            int index = q.top().second;
+            cout << "Word index: " << index << endl;
+            q.pop();
+        }
+    }
 }
 
 
@@ -362,6 +402,7 @@ int main(int argc, char **argv)
 
     // run spherical k-means on the given sparse matrix D
     Results r = runSPKMeans(D, k, dc, wc);
+    displayResults(&r, 10);
     r.clearMemory(); // TODO - destructor gets called anyway
 
     return 0;
