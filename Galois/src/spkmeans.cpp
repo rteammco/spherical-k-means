@@ -10,6 +10,7 @@
 #include <string>
 
 #include "Galois/Galois.h"
+#include "Galois/Timer.h"
 
 #include "vectors.h"
 
@@ -110,6 +111,10 @@ float* computeConcept(float **partition, int p_size, int wc)
 // clusters the data into k partitions.
 void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 {
+    // keep track of the run time for this algorithm
+    Galois::Timer timer;
+    timer.start();
+
     // apply the TXN scheme on the document vectors (normalize them)
     txnScheme(doc_matrix, dc, wc);
 
@@ -153,7 +158,6 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
         iterations++;
 
         // compute new partitions based on old concept vectors
-        //cout << "Calculating new partitions..." << endl;
         vector<float*> *new_partitions = new vector<float*>[k];
         for(int i=0; i<k; i++)
             new_partitions[i] = vector<float*>();
@@ -171,7 +175,6 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
         }
 
         // transfer the new partitions to the partitions array
-        //cout << "Copying new partitions to partition array..." << endl;
         clearPartitions(partitions, k);
         for(int i=0; i<k; i++) {
             partitions[i] = new_partitions[i].data();
@@ -179,20 +182,22 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
         }
 
         // compute new concept vectors
-        //cout << "Computing new concept vectors..." << endl;
         clearConcepts(concepts, k);
         for(int i=0; i<k; i++)
             concepts[i] = computeConcept(partitions[i], p_sizes[i], wc);
 
         // compute quality of new partitioning
-        //cout << "Computing new partition quality..." << endl;
         float n_quality = computeQuality(partitions, p_sizes, concepts, k, wc);
         dQ = n_quality - quality;
         quality = n_quality;
         cout << "Quality: " << quality << " (+" << dQ << ")" << endl;
     }
 
-    cout << "Done after " << iterations << " iterations." << endl;
+    timer.stop();
+    float time_in_ms = timer.get();
+
+    cout << "Done in " << time_in_ms / 1000
+         << " seconds after " << iterations << " iterations." << endl;
 
     // clean up everything - TODO: maybe return some of these
     clearPartitions(partitions, k);
