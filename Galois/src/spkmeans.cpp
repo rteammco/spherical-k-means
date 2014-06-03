@@ -269,7 +269,7 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 
 
 // shows the results
-void displayResults(Results *r, int num_to_show = 10)
+void displayResults(Results *r, char **words, int num_to_show = 10)
 {
     // make sure num_to_show doesn't exceed the actual word count
     if(num_to_show > r->wc)
@@ -291,7 +291,7 @@ void displayResults(Results *r, int num_to_show = 10)
         // show top num_to_show words
         for(int i=0; i<num_to_show; i++) {
             int index = q.top().second;
-            cout << "Word index: " << index << endl;
+            cout << "   " << words[index] << endl;
             q.pop();
         }
     }
@@ -312,7 +312,7 @@ void displayResults(Results *r, int num_to_show = 10)
  *      ...
  *  <end of file>
  */
-float** loadFile(const char *fname, int &dc, int &wc)
+float** loadDocFile(const char *fname, int &dc, int &wc)
 {
     ifstream infile(fname);
     
@@ -337,7 +337,35 @@ float** loadFile(const char *fname, int &dc, int &wc)
         mat[doc_id-1][word_id-1] = count;
     }
 
+    infile.close();
     return mat;
+}
+
+
+
+// Read the word data into a list. Words are just organized one word per line.
+char** loadWordsFile(const char *fname, int wc)
+{
+    ifstream infile(fname);
+    char **words = new char*[wc];
+
+    int i = 0;
+    string line;
+    while(getline(infile, line)) {
+        // if we're out of word space and the file has more, stop
+        if(i >= wc)
+            break;
+
+        // copy the word into memory
+        char *word = new char[line.size() + 1];
+        word[line.size()] = 0;
+        memcpy(word, line.c_str(), line.size());
+        words[i] = word;
+        i++;
+    }
+
+    infile.close();
+    return words;
 }
 
 
@@ -384,6 +412,7 @@ int processArgs(int argc, char **argv,
 // main: set up Galois and start the clustering process.
 int main(int argc, char **argv)
 {
+
     // get file name, and set up k and number of threads
     string fname;
     unsigned int k, num_threads;
@@ -398,11 +427,14 @@ int main(int argc, char **argv)
 
     // set up the sparse matrix
     int dc, wc;
-    float **D = loadFile(fname.c_str(), dc, wc);
+    float **D = loadDocFile(fname.c_str(), dc, wc);
 
     // run spherical k-means on the given sparse matrix D
     Results r = runSPKMeans(D, k, dc, wc);
-    displayResults(&r, 10);
+
+    char **words = loadWordsFile("../TestData/vocabulary", r.wc);
+    displayResults(&r, words, 10);
+
     r.clearMemory(); // TODO - destructor gets called anyway
 
     return 0;
