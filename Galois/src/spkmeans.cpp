@@ -20,6 +20,7 @@
 #define DEFAULT_K 2
 #define DEFAULT_THREADS 2
 #define Q_THRESHOLD 0.001
+#define DEFAULT_DOC_FILE "data"
 
 
 using namespace std;
@@ -32,6 +33,18 @@ void printVec(float *vec, int size)
     for(int i=0; i<size; i++)
         cout << vec[i] << " ";
     cout << endl;
+}
+
+
+
+// Prints a short message on how to use this program.
+void printUsage()
+{
+    cout << "Usage: "
+         << "./spkmeans doc_file [k] [num_threads] [vocab_file]"
+         << endl;
+    cout << "Default values are: k = 2, 2 threads, no vocabulary file."
+         << endl;
 }
 
 
@@ -268,7 +281,9 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 
 
 
-// shows the results
+// Displays the results of each partition. If a words list is provided,
+// the top num_to_show words will be displayed for each partition.
+// Otherwise, if words is a null pointer, only the indices will be shown.
 void displayResults(Results *r, char **words, int num_to_show = 10)
 {
     // make sure num_to_show doesn't exceed the actual word count
@@ -291,7 +306,10 @@ void displayResults(Results *r, char **words, int num_to_show = 10)
         // show top num_to_show words
         for(int i=0; i<num_to_show; i++) {
             int index = q.top().second;
-            cout << "   " << words[index] << endl;
+            if(words != 0)
+                cout << "   " << words[index] << endl;
+            else
+                cout << "   " << index << endl;
             q.pop();
         }
     }
@@ -344,11 +362,20 @@ float** loadDocFile(const char *fname, int &dc, int &wc)
 
 
 // Read the word data into a list. Words are just organized one word per line.
+// Returns a list of strings (char pointers), or a null pointer if the given
+// file name does not exist.
 char** loadWordsFile(const char *fname, int wc)
 {
     ifstream infile(fname);
-    char **words = new char*[wc];
 
+    // check that the file exists - if not, return a null pointer
+    if(!infile.good()) {
+        infile.close();
+        return 0;
+    }
+
+    // read in the list of words
+    char **words = new char*[wc];
     int i = 0;
     string line;
     while(getline(infile, line)) {
@@ -375,18 +402,19 @@ char** loadWordsFile(const char *fname, int wc)
 // of threads for Galois to use).
 // Returns -1 on fail (provided file doesn't exist), else 0 on success.
 int processArgs(int argc, char **argv,
-    string *fname, unsigned int *k, unsigned int *num_threads)
+    string *doc_fname, unsigned int *k, unsigned int *num_threads,
+    string *vocab_fname)
 {
-    // set up file name
+    // set up document file name
     if(argc >= 2)
-        *fname = string(argv[1]);
+        *doc_fname = string(argv[1]);
     else
-        *fname = "data";
+        *doc_fname = DEFAULT_DOC_FILE;
 
     // check that the file exists - if not, error
-    ifstream test(fname->c_str());
+    ifstream test(doc_fname->c_str());
     if(!test.good()) {
-        cout << "Error: file \"" << *fname << "\" does not exist." << endl;
+        cout << "Error: file \"" << *doc_fname << "\" does not exist." << endl;
         test.close();
         return -1;
     }
@@ -404,6 +432,12 @@ int processArgs(int argc, char **argv,
     else
         *num_threads = DEFAULT_THREADS;
 
+    // set up vocabulary file name
+    if(argc >= 5)
+        *vocab_fname = argv[4];
+    else
+        *vocab_fname = "";
+
     return 0;
 }
 
@@ -412,30 +446,31 @@ int processArgs(int argc, char **argv,
 // main: set up Galois and start the clustering process.
 int main(int argc, char **argv)
 {
-
-    // get file name, and set up k and number of threads
-    string fname;
+    // get file names, and set up k and number of threads
+    string doc_fname, vocab_fname;
     unsigned int k, num_threads;
-    if(processArgs(argc, argv, &fname, &k, &num_threads) != 0)
+    if(processArgs(argc, argv,
+        &doc_fname, &k, &num_threads, &vocab_fname) != 0)
+    {
+        printUsage();
         return -1;
+    }
 
     // tell Galois the max thread count
     Galois::setActiveThreads(num_threads);
     num_threads = Galois::getActiveThreads();
-    cout << "Running SPK Means on \"" << fname << "\" with k=" << k
+    cout << "Running SPK Means on \"" << doc_fname << "\" with k=" << k
          << " (" << num_threads << " threads)." << endl;
 
     // set up the sparse matrix
     int dc, wc;
-    float **D = loadDocFile(fname.c_str(), dc, wc);
+    float **D = loadDocFile(doc_fname.c_str(), dc, wc);
 
     // run spherical k-means on the given sparse matrix D
     Results r = runSPKMeans(D, k, dc, wc);
 
-    char **words = loadWordsFile("../TestData/vocabulary", r.wc);
+    char **words = loadWordsFile(vocab_fname.c_str(), r.wc);
     displayResults(&r, words, 10);
-
-    r.clearMemory(); // TODO - destructor gets called anyway
 
     return 0;
 }
