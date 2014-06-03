@@ -107,21 +107,69 @@ float* computeConcept(float **partition, int p_size, int wc)
 
 
 
+// Results struct can contain partition and concept vector pointers, and
+// a function to clean out the memory.
+struct Results
+{
+    // clustering variables (k, word count, document count)
+    int k;
+    int dc;
+    int wc;
+
+    // pointers to partitions and concepts
+    float ***partitions;
+    float **concepts;
+
+    // Constructor: pass in the three required values (k, wc, dc), and set
+    // partition and concept vector pointers optionally.
+    Results(int k_, int dc_, int wc_, float ***ps_ = 0, float **cvs_ = 0) {
+        k = k_;
+        dc = dc_;
+        wc = wc_;
+        partitions = ps_;
+        concepts = cvs_;
+    }
+
+    // Destructor: calls its own clean up function
+    ~Results() {
+        clearMemory();
+    }
+
+    // clean up the partitions and concept vector pointers
+    void clearMemory() {
+        if(partitions != 0) {
+            clearPartitions(partitions, k);
+            delete partitions;
+            partitions = 0;
+        }
+        if(concepts != 0) {
+            clearConcepts(concepts, k);
+            delete concepts;
+            concepts = 0;
+        }
+    }
+};
+
+
+
 // Runs the spherical k-means algorithm on the given sparse matrix D and
 // clusters the data into k partitions.
-void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
+Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 {
     // keep track of the run time for this algorithm
     Galois::Timer timer;
     timer.start();
 
+
     // apply the TXN scheme on the document vectors (normalize them)
     txnScheme(doc_matrix, dc, wc);
+
 
     // initialize arrays
     float ***partitions = new float**[k];
     int p_sizes[k];
     float **concepts = new float*[k];
+
 
     // create the first arbitrary partitioning
     int split = floor(dc / k);
@@ -143,13 +191,16 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
         base = base + split;
     }
 
+
     // compute concept vectors
     for(int i=0; i<k; i++)
         concepts[i] = computeConcept(partitions[i], p_sizes[i], wc);
 
+
     // compute initial quality of the partitions
     float quality = computeQuality(partitions, p_sizes, concepts, k, wc);
     cout << "Initial quality: " << quality << endl;
+
 
     // do spherical k-means loop
     float dQ = Q_THRESHOLD * 10;
@@ -193,17 +244,17 @@ void runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
         cout << "Quality: " << quality << " (+" << dQ << ")" << endl;
     }
 
+
+    // report runtime statistics
     timer.stop();
     float time_in_ms = timer.get();
-
     cout << "Done in " << time_in_ms / 1000
          << " seconds after " << iterations << " iterations." << endl;
 
-    // clean up everything - TODO: maybe return some of these
-    clearPartitions(partitions, k);
-    clearConcepts(concepts, k);
-    delete partitions;
-    delete concepts;
+
+    // return the resulting partitions and concepts in a Results struct
+    Results r(k, dc, wc, partitions, concepts);
+    return r;
 }
 
 
@@ -302,7 +353,7 @@ int main(int argc, char **argv)
     // tell Galois the max thread count
     Galois::setActiveThreads(num_threads);
     num_threads = Galois::getActiveThreads();
-    cout << "Running SPK Means on " << fname << " with k=" << k
+    cout << "Running SPK Means on \"" << fname << "\" with k=" << k
          << " (" << num_threads << " threads)." << endl;
 
     // set up the sparse matrix
@@ -310,7 +361,8 @@ int main(int argc, char **argv)
     float **D = loadFile(fname.c_str(), dc, wc);
 
     // run spherical k-means on the given sparse matrix D
-    runSPKMeans(D, k, dc, wc);
+    Results r = runSPKMeans(D, k, dc, wc);
+    r.clearMemory(); // TODO - destructor gets called anyway
 
     return 0;
 }
