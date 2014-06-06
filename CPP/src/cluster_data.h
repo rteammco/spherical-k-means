@@ -25,16 +25,33 @@ struct ClusterData
 
 
     // Constructor: pass in the three required values (k, wc, dc), and set
-    // partition and concept vector pointers optionally.
+    // partition and concept vector pointers optionally. If pointers to the
+    // lists are not provided, new lists will be initialized instead.
     ClusterData(int k_, int dc_, int wc_,
             float ***ps_ = 0, int *psz_ = 0, float **cvs_ = 0)
     {
+        // set the variables (k, document count, word count)
         k = k_;
         dc = dc_;
         wc = wc_;
-        partitions = ps_;
-        p_sizes = psz_;
-        concepts = cvs_;
+
+        // set partitions pointer
+        if(ps_ == 0)
+            partitions = new float**[k];
+        else
+            partitions = ps_;
+
+        // set partition sizes pointer
+        if(psz_ == 0)
+            p_sizes = new int[k];
+        else
+            p_sizes = psz_;
+
+        // set concepts pointer
+        if(concepts == 0)
+            concepts = new float*[k];
+        else
+            concepts = cvs_;
     }
 
 
