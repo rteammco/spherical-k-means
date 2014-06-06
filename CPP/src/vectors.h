@@ -1,3 +1,9 @@
+/* File: vectors.h
+ *
+ * This file contains basic vector manipulation functions used by the
+ * spherical K-means algorithm.
+ */
+
 #ifndef VECTORS_H
 #define VECTORS_H
 

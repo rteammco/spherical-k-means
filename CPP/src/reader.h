@@ -4,6 +4,8 @@
  * document file and an associated vocabulary file.
  */
 
+#ifndef READER_H
+#define READER_H
 
 
 /* Read the document data file into a spare matrix (2D array) format).
@@ -22,8 +24,10 @@
 float** readDocFile(const char *fname, int &dc, int &wc);
 
 
-
 // Read the word data into a list. Words are just organized one word per line.
 // Returns a list of strings (char pointers), or a null pointer if the given
 // file name does not exist.
 char** readWordsFile(const char *fname, int wc);
+
+
+#endif
