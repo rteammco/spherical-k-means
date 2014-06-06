@@ -14,6 +14,7 @@
 #include "Galois/Galois.h"
 #include "Galois/Timer.h"
 
+#include "reader.h"
 #include "vectors.h"
 
 
@@ -346,86 +347,6 @@ void displayResults(Results *r, char **words, int num_to_show = 10)
 
 
 
-/* Read the document data file into a spare matrix (2D array) format).
- * This function assumes that the given file name is valid.
- * Returns the 2D array (sparse matrix) - columns are document vectors.
- * FILE FORMAT:
- *  <top of file>
- *      number of documents
- *      number of unique words
- *      number of non-zero words in the collection
- *      docID wordID count
- *      docID wordID count
- *      ...
- *  <end of file>
- */
-float** loadDocFile(const char *fname, int &dc, int &wc)
-{
-    ifstream infile(fname);
-    
-    // get the number of documents and words in the data set
-    int nzwc; // non-zero word count (ignored)
-    infile >> dc >> wc >> nzwc;
-
-    // set up the matrix and initialize it to all zeros
-    float **mat = new float*[dc];
-    for(int i=0; i<dc; i++) {
-        mat[i] = new float[wc];
-        memset(mat[i], 0, wc * sizeof(*mat[i]));
-    }
-
-    // populate the matrix from the data file
-    string line;
-    while(getline(infile, line)) {
-        istringstream iss(line);
-        int doc_id, word_id, count;
-        if(!(iss >> doc_id >> word_id >> count))
-            continue;
-        mat[doc_id-1][word_id-1] = count;
-    }
-
-    infile.close();
-    return mat;
-}
-
-
-
-// Read the word data into a list. Words are just organized one word per line.
-// Returns a list of strings (char pointers), or a null pointer if the given
-// file name does not exist.
-char** loadWordsFile(const char *fname, int wc)
-{
-    ifstream infile(fname);
-
-    // check that the file exists - if not, return a null pointer
-    if(!infile.good()) {
-        infile.close();
-        return 0;
-    }
-
-    // read in the list of words
-    char **words = new char*[wc];
-    int i = 0;
-    string line;
-    while(getline(infile, line)) {
-        // if we're out of word space and the file has more, stop
-        if(i >= wc)
-            break;
-
-        // copy the word into memory
-        char *word = new char[line.size() + 1];
-        word[line.size()] = 0;
-        memcpy(word, line.c_str(), line.size());
-        words[i] = word;
-        i++;
-    }
-
-    infile.close();
-    return words;
-}
-
-
-
 // Takes argc and argv from program input and parses the parameters to set
 // values for k (number of clusters) and num_threads (the maximum number
 // of threads for Galois to use).
@@ -493,13 +414,13 @@ int main(int argc, char **argv)
 
     // set up the sparse matrix
     int dc, wc;
-    float **D = loadDocFile(doc_fname.c_str(), dc, wc);
+    float **D = readDocFile(doc_fname.c_str(), dc, wc);
     cout << dc << " documents, " << wc << " words." << endl;
 
     // run spherical k-means on the given sparse matrix D
     Results r = runSPKMeans(D, k, dc, wc);
 
-    char **words = loadWordsFile(vocab_fname.c_str(), r.wc);
+    char **words = readWordsFile(vocab_fname.c_str(), r.wc);
     displayResults(&r, words, 10);
 
     return 0;
