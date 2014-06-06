@@ -5,6 +5,7 @@
  */
 
 
+#include <fstream>
 #include <iostream>
 #include <queue>
 #include <string>
@@ -226,7 +227,11 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
     cout << "Initial quality: " << quality << endl;
 
 
-    // keep track of all individual component times
+    // keep track of all individual component times for analysis
+    Galois::Timer ptimer;
+    Galois::Timer ttimer;
+    Galois::Timer ctimer;
+    Galois::Timer qtimer;
     float p_time = 0;
     float t_time = 0;
     float c_time = 0;
@@ -239,7 +244,6 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
         iterations++;
 
         // compute new partitions based on old concept vectors
-        Galois::Timer ptimer;
         ptimer.start();
         vector<float*> *new_partitions = new vector<float*>[k];
         for(int i=0; i<k; i++)
@@ -260,7 +264,6 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
         p_time += ptimer.get();
 
         // transfer the new partitions to the partitions array
-        Galois::Timer ttimer;
         ttimer.start();
         clearPartitions(partitions, k);
         for(int i=0; i<k; i++) {
@@ -271,7 +274,6 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
         t_time += ttimer.get();
 
         // compute new concept vectors
-        Galois::Timer ctimer;
         ctimer.start();
         clearConcepts(concepts, k);
         for(int i=0; i<k; i++)
@@ -280,13 +282,13 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
         c_time += ctimer.get();
 
         // compute quality of new partitioning
-        Galois::Timer qtimer;
         qtimer.start();
         float n_quality = computeQuality(partitions, p_sizes, concepts, k, wc);
         dQ = n_quality - quality;
         quality = n_quality;
         qtimer.stop();
         q_time += qtimer.get();
+
         cout << "Quality: " << quality << " (+" << dQ << ")" << endl;
     }
 
