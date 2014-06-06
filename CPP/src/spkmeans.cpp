@@ -44,9 +44,7 @@ void printVec(float *vec, int size)
 void printUsage()
 {
     cout << "Usage: "
-         << "./spkmeans doc_file [k] [num_threads] [vocab_file]"
-         << endl;
-    cout << "Default values are: k = 2, 2 threads, no vocabulary file."
+         << "./spkmeans doc_file [k(=2)] [num_threads(=2)] [vocab_file(=NULL)]"
          << endl;
 }
 
@@ -308,11 +306,23 @@ int processArgs(int argc, char **argv,
     else
         *k = DEFAULT_K;
 
+    // error-check k:
+    if(*k < 2) {
+        cout << "Error: k must be larger than 2." << endl;
+        return -1;
+    }
+
     // set up number of threads
     if(argc >= 4) 
         *num_threads = atoi(argv[3]);
     else
         *num_threads = DEFAULT_THREADS;
+
+    // error check num-threads
+    if(*num_threads < 1) {
+        cout << "Error: minimum number of threads must be at least 1." << endl;
+        return -1;
+    }
 
     // set up vocabulary file name
     if(argc >= 5)
