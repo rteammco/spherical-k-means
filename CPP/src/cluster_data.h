@@ -65,7 +65,7 @@ struct ClusterData
     // Cleans up partition array by deleting the list of document vectors in
     // each partition slot. The vectors themselves are NOT deleted, nor is
     // the actual partition list.
-    void clearPartitions(float ***partitions, int k)
+    void clearPartitions()
     {
         for(int i=0; i<k; i++)
             delete partitions[i];
@@ -74,7 +74,7 @@ struct ClusterData
 
     // Cleans concept vector memory, permanently deleting all of the concept
     // vectors. The actual concept vector list is NOT deleted.
-    void clearConcepts(float **concepts, int k)
+    void clearConcepts()
     {
         for(int i=0; i<k; i++)
             delete concepts[i];
@@ -85,7 +85,7 @@ struct ClusterData
     void clearMemory()
     {
         if(partitions != 0) {
-            clearPartitions(partitions, k);
+            clearPartitions();
             delete partitions;
             partitions = 0;
         }
@@ -94,7 +94,7 @@ struct ClusterData
             p_sizes = 0;
         }
         if(concepts != 0) {
-            clearConcepts(concepts, k);
+            clearConcepts();
             delete concepts;
             concepts = 0;
         }

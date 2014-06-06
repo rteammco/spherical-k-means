@@ -62,24 +62,6 @@ void txnScheme(float **doc_matrix, int dc, int wc)
 
 
 
-// Cleans partition memory, resetting the partitions list.
-void clearPartitions(float ***partitions, int k)
-{
-    for(int i=0; i<k; i++)
-        delete partitions[i];
-}
-
-
-
-// Cleans concept vector memory, resetting the concepts list.
-void clearConcepts(float **concepts, int k)
-{
-    for(int i=0; i<k; i++)
-        delete concepts[i];
-}
-
-
-
 // Returns the quality of the given partition by doing a dot product against
 // its given concept vector.
 float computeQuality(float **partition, int p_size, float *concept, int wc)
@@ -125,61 +107,9 @@ float* computeConcept(float **partition, int p_size, int wc)
 
 
 
-// Results struct can contain partition and concept vector pointers, and
-// a function to clean out the memory.
-struct Results
-{
-    // clustering variables (k, word count, document count)
-    int k;
-    int dc;
-    int wc;
-
-    // pointers to partitions and concepts
-    float ***partitions;
-    int *p_sizes;
-    float **concepts;
-
-    // Constructor: pass in the three required values (k, wc, dc), and set
-    // partition and concept vector pointers optionally.
-    Results(int k_, int dc_, int wc_,
-            float ***ps_ = 0, int *psz_ = 0, float **cvs_ = 0) {
-        k = k_;
-        dc = dc_;
-        wc = wc_;
-        partitions = ps_;
-        p_sizes = psz_;
-        concepts = cvs_;
-    }
-
-    // Destructor: calls its own clean up function
-    ~Results() {
-        clearMemory();
-    }
-
-    // clean up the partitions and concept vector pointers
-    void clearMemory() {
-        if(partitions != 0) {
-            clearPartitions(partitions, k);
-            delete partitions;
-            partitions = 0;
-        }
-        if(p_sizes != 0) {
-            delete p_sizes;
-            p_sizes = 0;
-        }
-        if(concepts != 0) {
-            clearConcepts(concepts, k);
-            delete concepts;
-            concepts = 0;
-        }
-    }
-};
-
-
-
 // Runs the spherical k-means algorithm on the given sparse matrix D and
 // clusters the data into k partitions.
-Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
+ClusterData runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 {
     // keep track of the run time for this algorithm
     Galois::Timer timer;
@@ -190,10 +120,11 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
     txnScheme(doc_matrix, dc, wc);
 
 
-    // initialize arrays
-    float ***partitions = new float**[k];
-    int *p_sizes = new int[k];
-    float **concepts = new float*[k];
+    // initialize the data arrays; keep track of the arrays locally
+    ClusterData data(k, dc, wc);
+    float ***partitions = data.partitions;
+    int *p_sizes = data.p_sizes;
+    float **concepts = data.concepts;
 
 
     // create the first arbitrary partitioning
@@ -265,7 +196,7 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 
         // transfer the new partitions to the partitions array
         ttimer.start();
-        clearPartitions(partitions, k);
+        data.clearPartitions();
         for(int i=0; i<k; i++) {
             partitions[i] = new_partitions[i].data();
             p_sizes[i] = new_partitions[i].size();
@@ -275,7 +206,7 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 
         // compute new concept vectors
         ctimer.start();
-        clearConcepts(concepts, k);
+        data.clearConcepts();
         for(int i=0; i<k; i++)
             concepts[i] = computeConcept(partitions[i], p_sizes[i], wc);
         ctimer.stop();
@@ -306,9 +237,8 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
          << "   quality [" << q_time << "] (" << (q_time/total)*100 << "%)" << endl;
 
 
-    // return the resulting partitions and concepts in a Results struct
-    Results r(k, dc, wc, partitions, p_sizes, concepts);
-    return r;
+    // return the resulting partitions and concepts in the ClusterData struct
+    return data;
 }
 
 
@@ -316,21 +246,21 @@ Results runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 // Displays the results of each partition. If a words list is provided,
 // the top num_to_show words will be displayed for each partition.
 // Otherwise, if words is a null pointer, only the indices will be shown.
-void displayResults(Results *r, char **words, int num_to_show = 10)
+void displayResults(ClusterData *data, char **words, int num_to_show = 10)
 {
     // make sure num_to_show doesn't exceed the actual word count
-    if(num_to_show > r->wc)
-        num_to_show = r->wc;
+    if(num_to_show > data->wc)
+        num_to_show = data->wc;
 
     // for each partition, sum the weights of each word, and show the top
     //  words that occur in the partition:
-    for(int i=0; i<(r->k); i++) {
+    for(int i=0; i<(data->k); i++) {
         cout << "Partition #" << (i+1) << ":" << endl;
         // sum the weights
-        float *sum = vec_sum(r->partitions[i], r->wc, r->p_sizes[i]);
+        float *sum = vec_sum(data->partitions[i], data->wc, data->p_sizes[i]);
 
         // sort this sum using C++ priority queue (keeping track of indices)
-        vector<float> values(sum, sum + r->wc);
+        vector<float> values(sum, sum + data->wc);
         priority_queue<pair<float, int>> q;
         for(int i=0; i<values.size(); i++)
             q.push(pair<float, int>(values[i], i));
@@ -420,10 +350,10 @@ int main(int argc, char **argv)
     cout << dc << " documents, " << wc << " words." << endl;
 
     // run spherical k-means on the given sparse matrix D
-    Results r = runSPKMeans(D, k, dc, wc);
+    ClusterData data = runSPKMeans(D, k, dc, wc);
 
-    char **words = readWordsFile(vocab_fname.c_str(), r.wc);
-    displayResults(&r, words, 10);
+    char **words = readWordsFile(vocab_fname.c_str(), wc);
+    displayResults(&data, words, 10);
 
     return 0;
 }
