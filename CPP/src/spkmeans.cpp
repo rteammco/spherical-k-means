@@ -14,6 +14,7 @@
 #include "Galois/Galois.h"
 #include "Galois/Timer.h"
 
+#include "cluster_data.h"
 #include "reader.h"
 #include "vectors.h"
 
