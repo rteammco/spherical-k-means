@@ -1,8 +1,11 @@
 /* File: spkmeans.cpp
  *
  * A parallel implementation of the Spherical K-Means algorithm using the
- * Galois library (http://iss.ices.utexas.edu/?p=projects/galois).
+ * Galois library (http://iss.ices.utexas.edu/?p=projects/galois) and OpenMP.
  */
+
+// PROGRAM VERSION
+#define VERSION "0.1 (dev)"
 
 
 #include <fstream>
@@ -19,11 +22,22 @@
 #include "vectors.h"
 
 
+// return flags (for argument parsing)
+#define RETURN_SUCCESS 0
+#define RETURN_HELP 1
+#define RETURN_VERSION 2
+#define RETURN_ERROR -1
+
 // default parameters
 #define DEFAULT_K 2
 #define DEFAULT_THREADS 2
 #define Q_THRESHOLD 0.001
-#define DEFAULT_DOC_FILE "data"
+#define DEFAULT_DOC_FILE "docs"
+
+// type of parallel implementations
+#define RUN_NORMAL 0
+#define RUN_GALOIS 1
+#define RUN_OPENMP 2
 
 
 using namespace std;
@@ -43,9 +57,13 @@ void printVec(float *vec, int size)
 // Prints a short message on how to use this program.
 void printUsage()
 {
-    cout << "Usage: "
-         << "./spkmeans doc_file [k(=2)] [num_threads(=2)] [vocab_file(=NULL)]"
-         << endl;
+    // $ ./spkmeans -d docfile -w wordfile -k 2 -t 2 --galois
+    cout << "Usage: " << endl
+         << " $ ./spkmeans [-d docfile] [-v vocabfile] [-k k] [-t numthreads] "
+         << "[--galois OR --openmp]" << endl
+         << "Other commands: " << endl
+         << " $ ./spkmeans --help" << endl
+         << " $ ./spkmeans --version" << endl;
 }
 
 
@@ -282,55 +300,58 @@ void displayResults(ClusterData *data, char **words, int num_to_show = 10)
 // of threads for Galois to use).
 // Returns -1 on fail (provided file doesn't exist), else 0 on success.
 int processArgs(int argc, char **argv,
-    string *doc_fname, unsigned int *k, unsigned int *num_threads,
-    string *vocab_fname)
+    string *doc_fname, string *vocab_fname,
+    unsigned int *k, unsigned int *num_threads, unsigned int *run_type)
 {
-    // set up document file name
-    if(argc >= 2)
-        *doc_fname = string(argv[1]);
-    else
-        *doc_fname = DEFAULT_DOC_FILE;
+    // set defaults before proceeding to check arguments
+    *doc_fname = DEFAULT_DOC_FILE;
+    *vocab_fname = "";
+    *k = DEFAULT_K;
+    *num_threads = DEFAULT_THREADS;
+    *run_type = RUN_NORMAL;
 
-    // check that the file exists - if not, error
+    // check arguments: expected command as follows:
+    // $ ./spkmeans -d docfile -w wordfile -k 2 -t 2 --galois
+    for(int i=1; i<argc; i++) {
+        string arg(argv[i]);
+
+        // if flag is --help, return 1 to print usage instructions
+        if(arg == "--help" || arg == "-h")
+            return RETURN_HELP;
+        // if flag is --version, return 2 to print version number
+        else if(arg == "--version" || arg == "-v" || arg == "-V")
+            return RETURN_VERSION;
+
+        // if the flag was to run as galois or openmp, set the run type
+        else if(arg == "--galois")
+            *run_type = RUN_GALOIS;
+        else if(arg == "--openmp")
+            *run_type = RUN_OPENMP;
+
+        // otherwise, check the given flag value
+        else {
+            i++;
+            if(arg == "-d") // document file
+                *doc_fname = string(argv[i]);
+            else if(arg == "-w" || arg == "-v") // words file
+                *vocab_fname = string(argv[i]);
+            else if(arg == "-k") // size of k
+                *k = atoi(argv[i]);
+            else if(arg == "-t") // number of threads
+                *num_threads = atoi(argv[i]);
+        }
+    }
+
+    // check that the document file exists - if not, return error
     ifstream test(doc_fname->c_str());
     if(!test.good()) {
         cout << "Error: file \"" << *doc_fname << "\" does not exist." << endl;
         test.close();
-        return -1;
+        return RETURN_ERROR;
     }
     test.close();
 
-    // set up size of k
-    if(argc >= 3)
-        *k = atoi(argv[2]);
-    else
-        *k = DEFAULT_K;
-
-    // error-check k:
-    if(*k < 2) {
-        cout << "Error: k must be larger than 2." << endl;
-        return -1;
-    }
-
-    // set up number of threads
-    if(argc >= 4) 
-        *num_threads = atoi(argv[3]);
-    else
-        *num_threads = DEFAULT_THREADS;
-
-    // error check num-threads
-    if(*num_threads < 1) {
-        cout << "Error: minimum number of threads must be at least 1." << endl;
-        return -1;
-    }
-
-    // set up vocabulary file name
-    if(argc >= 5)
-        *vocab_fname = argv[4];
-    else
-        *vocab_fname = "";
-
-    return 0;
+    return RETURN_SUCCESS;
 }
 
 
@@ -340,12 +361,21 @@ int main(int argc, char **argv)
 {
     // get file names, and set up k and number of threads
     string doc_fname, vocab_fname;
-    unsigned int k, num_threads;
-    if(processArgs(argc, argv,
-        &doc_fname, &k, &num_threads, &vocab_fname) != 0)
-    {
+    unsigned int k, num_threads, run_type;
+    int retval = processArgs(
+        argc, argv,
+        &doc_fname, &vocab_fname, &k, &num_threads, &run_type);
+    if(retval == RETURN_ERROR) {
         printUsage();
         return -1;
+    }
+    else if(retval == RETURN_HELP) {
+        printUsage();
+        return 0;
+    }
+    else if(retval == RETURN_VERSION) {
+        cout << "Version: " << VERSION << endl;
+        return 0;
     }
 
     // tell Galois the max thread count

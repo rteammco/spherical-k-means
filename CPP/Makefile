@@ -18,12 +18,12 @@ clean:
 
 # Run with a small test file:
 test:
-	./spkmeans test.txt
+	./spkmeans -d test.txt
 
 
 # Run with the larger test data set:
 run:
-	./spkmeans ../TestData/documents
+	./spkmeans -d ../TestData/documents -v ../TestData/vocabulary
 
 
 # Debug with GDB (running on larger test data set):
