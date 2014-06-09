@@ -193,29 +193,33 @@ int main(int argc, char **argv)
     cout << "Running SPK Means on \"" << doc_fname << "\" with k=" << k;
 
     // run the program based on the run type provided (none, openmp, galois)
-    ClusterData *data;
-    if(run_type == RUN_NORMAL) {
-        cout << endl;
-        SPKMeansOpenMP s;
-        data = s.runSPKMeans(D, k, dc, wc);
-    }
+    ClusterData *data = 0;
     /*else if(run_type == RUN_GALOIS) {
         // tell Galois the max thread count
+        cout << " [Galois: " << num_threads << " threads]." << endl;
         cout << " (" << num_threads << " threads)." << endl;
         Galois::setActiveThreads(num_threads);
         num_threads = Galois::getActiveThreads();
         data = runSPKMeans(D, k, dc, wc);
-    }
-    else if(run_type == RUN_OPENMP) {
-        // tell OpenMP the max thread count
-        cout << " (" << num_threads << " threads)." << endl;
-        data = runSPKMeans(D, k, dc, wc);
     }*/
+    if(run_type == RUN_OPENMP) {
+        // tell OpenMP the max thread count
+        cout << " [OpenMP: " << num_threads << " threads]." << endl;
+        SPKMeans spkm;
+        data = spkm.runSPKMeans(D, k, dc, wc);
+    }
+    else {
+        cout << " [single thread]." << endl;
+        SPKMeans spkm;
+        data = spkm.runSPKMeans(D, k, dc, wc);
+    }
 
-    // display the results of the algorithm
-    char **words = readWordsFile(vocab_fname.c_str(), wc);
-    displayResults(data, words, 10);
+    // display the results of the algorithm (if anything happened)
+    if(data) {
+        char **words = readWordsFile(vocab_fname.c_str(), wc);
+        displayResults(data, words, 10);
+        delete data;
+    }
 
-    delete data;
     return 0;
 }

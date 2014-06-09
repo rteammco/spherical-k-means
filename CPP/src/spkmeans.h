@@ -31,8 +31,7 @@ class SPKMeans {
 
   public:
     // the algorithm is implemented differently by each type of paradigm
-    virtual ClusterData* runSPKMeans(
-        float **doc_matrix, int k, int dc, int wc) = 0;
+    virtual ClusterData* runSPKMeans(float **doc_matrix, int k, int dc, int wc);
 };
 
 

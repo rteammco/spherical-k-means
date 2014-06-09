@@ -6,11 +6,11 @@
 
 #include "spkmeans.h"
 
+#include <cmath>
 #include <iostream>
 #include <queue>
 #include <vector>
 
-#include "Galois/Galois.h"
 #include "Galois/Timer.h"
 
 #include "cluster_data.h"
