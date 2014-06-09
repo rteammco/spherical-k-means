@@ -38,8 +38,18 @@ class SPKMeans {
 
 // OpenMP version of the SPKMeans algorithm
 class SPKMeansOpenMP : SPKMeans {
+  private:
+    unsigned int num_threads;
+
   public:
+    // constructors
+    SPKMeansOpenMP();
+    SPKMeansOpenMP(unsigned int t_);
+
+    // run the algorithm
     ClusterData* runSPKMeans(float **doc_matrix, int k, int dc, int wc);
+
+    void setNumThreads();
 };
 
 

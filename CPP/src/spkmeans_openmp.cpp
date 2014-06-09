@@ -19,6 +19,19 @@
 using namespace std;
 
 
+// CONSTRUCTOR: default num_threads to 1.
+SPKMeansOpenMP::SPKMeansOpenMP()
+{
+    num_threads = 1;
+}
+
+
+// CONSTRUCTOR: set a pre-defined number of threads.
+SPKMeansOpenMP::SPKMeansOpenMP(unsigned int t_)
+{
+    num_threads = t_;
+}
+
 
 // Runs the spherical k-means algorithm on the given sparse matrix D and
 // clusters the data into k partitions.
@@ -89,8 +102,10 @@ ClusterData* SPKMeansOpenMP::runSPKMeans(
         // compute new partitions based on old concept vectors
         ptimer.start();
         vector<float*> *new_partitions = new vector<float*>[k];
+        #pragma omp parallel for num_threads(num_threads)
         for(int i=0; i<k; i++)
             new_partitions[i] = vector<float*>();
+        #pragma omp parallel for num_threads(num_threads)
         for(int i=0; i<dc; i++) {
             int cIndx = 0;
             float cVal = cosineSimilarity(doc_matrix[i], concepts[0], wc);
@@ -116,6 +131,7 @@ ClusterData* SPKMeansOpenMP::runSPKMeans(
         // compute new concept vectors
         ctimer.start();
         data->clearConcepts();
+        #pragma omp parallel for num_threads(num_threads)
         for(int i=0; i<k; i++)
             concepts[i] = computeConcept(partitions[i], p_sizes[i], wc);
         ctimer.stop();
