@@ -176,11 +176,9 @@ ClusterData runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 
     // keep track of all individual component times for analysis
     Galois::Timer ptimer;
-    Galois::Timer ttimer;
     Galois::Timer ctimer;
     Galois::Timer qtimer;
     float p_time = 0;
-    float t_time = 0;
     float c_time = 0;
     float q_time = 0;
 
@@ -211,14 +209,11 @@ ClusterData runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
         p_time += ptimer.get();
 
         // transfer the new partitions to the partitions array
-        ttimer.start();
         data.clearPartitions();
         for(int i=0; i<k; i++) {
             partitions[i] = new_partitions[i].data();
             p_sizes[i] = new_partitions[i].size();
         }
-        ttimer.stop();
-        t_time += ttimer.get();
 
         // compute new concept vectors
         ctimer.start();
@@ -245,12 +240,18 @@ ClusterData runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
     float time_in_ms = timer.get();
     cout << "Done in " << time_in_ms / 1000
          << " seconds after " << iterations << " iterations." << endl;
-    float total = p_time + t_time + c_time + q_time;
-    cout << "Timers (ms): " << endl
-         << "   partition [" << p_time << "] (" << (p_time/total)*100 << "%)" << endl
-         << "   p_transfer [" << t_time << "] (" << (t_time/total)*100 << "%)" << endl
-         << "   concepts [" << c_time << "] (" << (c_time/total)*100 << "%)" << endl
-         << "   quality [" << q_time << "] (" << (q_time/total)*100 << "%)" << endl;
+    float total = p_time + c_time + q_time;
+    if(total == 0)
+        cout << "No time stats available: program finished too fast." << endl;
+    else {
+        cout << "Timers (ms): " << endl
+             << "   partition [" << p_time << "] ("
+                << (p_time/total)*100 << "%)" << endl
+             << "   concepts [" << c_time << "] ("
+                << (c_time/total)*100 << "%)" << endl
+             << "   quality [" << q_time << "] ("
+                << (q_time/total)*100 << "%)" << endl;
+    }
 
 
     // return the resulting partitions and concepts in the ClusterData struct
@@ -319,7 +320,7 @@ int processArgs(int argc, char **argv,
         if(arg == "--help" || arg == "-h")
             return RETURN_HELP;
         // if flag is --version, return 2 to print version number
-        else if(arg == "--version" || arg == "-v" || arg == "-V")
+        else if(arg == "--version" || arg == "-V")
             return RETURN_VERSION;
 
         // if the flag was to run as galois or openmp, set the run type
