@@ -125,7 +125,7 @@ float* computeConcept(float **partition, int p_size, int wc)
 
 // Runs the spherical k-means algorithm on the given sparse matrix D and
 // clusters the data into k partitions.
-ClusterData runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
+ClusterData* runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 {
     // keep track of the run time for this algorithm
     Galois::Timer timer;
@@ -137,10 +137,10 @@ ClusterData runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 
 
     // initialize the data arrays; keep track of the arrays locally
-    ClusterData data(k, dc, wc);
-    float ***partitions = data.partitions;
-    int *p_sizes = data.p_sizes;
-    float **concepts = data.concepts;
+    ClusterData *data = new ClusterData(k, dc, wc);
+    float ***partitions = data->partitions;
+    int *p_sizes = data->p_sizes;
+    float **concepts = data->concepts;
 
 
     // create the first arbitrary partitioning
@@ -209,7 +209,7 @@ ClusterData runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
         p_time += ptimer.get();
 
         // transfer the new partitions to the partitions array
-        data.clearPartitions();
+        data->clearPartitions();
         for(int i=0; i<k; i++) {
             partitions[i] = new_partitions[i].data();
             p_sizes[i] = new_partitions[i].size();
@@ -217,7 +217,7 @@ ClusterData runSPKMeans(float **doc_matrix, unsigned int k, int dc, int wc)
 
         // compute new concept vectors
         ctimer.start();
-        data.clearConcepts();
+        data->clearConcepts();
         for(int i=0; i<k; i++)
             concepts[i] = computeConcept(partitions[i], p_sizes[i], wc);
         ctimer.stop();
@@ -379,22 +379,35 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    // tell Galois the max thread count
-    Galois::setActiveThreads(num_threads);
-    num_threads = Galois::getActiveThreads();
-    cout << "Running SPK Means on \"" << doc_fname << "\" with k=" << k
-         << " (" << num_threads << " threads)." << endl;
-
     // set up the sparse matrix
     int dc, wc;
     float **D = readDocFile(doc_fname.c_str(), dc, wc);
     cout << dc << " documents, " << wc << " words." << endl;
+    cout << "Running SPK Means on \"" << doc_fname << "\" with k=" << k;
 
-    // run spherical k-means on the given sparse matrix D
-    ClusterData data = runSPKMeans(D, k, dc, wc);
+    // run the program based on the run type provided (none, openmp, galois)
+    ClusterData *data;
+    if(run_type == RUN_NORMAL) {
+        cout << endl;
+        data = runSPKMeans(D, k, dc, wc);
+    }
+    else if(run_type == RUN_GALOIS) {
+        // tell Galois the max thread count
+        cout << " (" << num_threads << " threads)." << endl;
+        Galois::setActiveThreads(num_threads);
+        num_threads = Galois::getActiveThreads();
+        data = runSPKMeans(D, k, dc, wc);
+    }
+    else if(run_type == RUN_OPENMP) {
+        // tell OpenMP the max thread count
+        cout << " (" << num_threads << " threads)." << endl;
+        data = runSPKMeans(D, k, dc, wc);
+    }
 
+    // display the results of the algorithm
     char **words = readWordsFile(vocab_fname.c_str(), wc);
-    displayResults(&data, words, 10);
+    displayResults(data, words, 10);
 
+    delete data;
     return 0;
 }

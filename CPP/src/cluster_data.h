@@ -48,7 +48,7 @@ struct ClusterData
             p_sizes = psz_;
 
         // set concepts pointer
-        if(concepts == 0)
+        if(cvs_ == 0)
             concepts = new float*[k];
         else
             concepts = cvs_;
