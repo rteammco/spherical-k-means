@@ -62,6 +62,9 @@ class SPKMeansGalois : SPKMeans {
     // constructor: set the number of threads and initialize Galois
     SPKMeansGalois(unsigned int t_ = 1);
 
+    // returns the actual number of threads Galois will use
+    int getNumThreads();
+
     // run the algorithm
     ClusterData* runSPKMeans(float **doc_matrix, int k, int dc, int wc);
 };

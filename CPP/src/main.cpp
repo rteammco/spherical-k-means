@@ -1,8 +1,14 @@
 /* File: spkmeans.cpp
  *
- * A parallel implementation of the Spherical K-Means algorithm using the
- * Galois library (http://iss.ices.utexas.edu/?p=projects/galois) and OpenMP.
+ * A C++ implementation of the Spherical K-means algorithm with an emphasis
+ * on parallel computing. This code features three modules: a normal,
+ * single-thread implementation, a multithreaded implementation using OpenMP,
+ * and a multithreaded implementation using the Galois library:
+ *  (http://iss.ices.utexas.edu/?p=projects/galois).
+ * The purpose of this code is to compare and optimize the algorithm with
+ * different parallel paradigms.
  */
+
 
 // PROGRAM VERSION
 #define VERSION "0.1 (dev)"
@@ -38,16 +44,6 @@
 
 
 using namespace std;
-
-
-
-// Debug: prints the given vector (array) to std out.
-void printVec(float *vec, int size)
-{
-    for(int i=0; i<size; i++)
-        cout << vec[i] << " ";
-    cout << endl;
-}
 
 
 
@@ -202,23 +198,21 @@ int main(int argc, char **argv)
 
     // run the program based on the run type provided (none, openmp, galois)
     ClusterData *data = 0;
-    /*else if(run_type == RUN_GALOIS) {
+    if(run_type == RUN_GALOIS) {
         // tell Galois the max thread count
-        cout << " [Galois: " << num_threads << " threads]." << endl;
-        cout << " (" << num_threads << " threads)." << endl;
-        Galois::setActiveThreads(num_threads);
-        num_threads = Galois::getActiveThreads();
-        data = runSPKMeans(D, k, dc, wc);
-    }*/
-    if(run_type == RUN_OPENMP) {
+        SPKMeansGalois spkm(num_threads);
+        cout << " [Galois: " << spkm.getNumThreads() << " threads]." << endl;
+        data = spkm.runSPKMeans(D, k, dc, wc);
+    }
+    else if(run_type == RUN_OPENMP) {
         // tell OpenMP the max thread count
-        cout << " [OpenMP: " << num_threads << " threads]." << endl;
         SPKMeansOpenMP spkm(num_threads);
+        cout << " [OpenMP: " << num_threads << " threads]." << endl;
         data = spkm.runSPKMeans(D, k, dc, wc);
     }
     else {
-        cout << " [single thread]." << endl;
         SPKMeans spkm;
+        cout << " [single thread]." << endl;
         data = spkm.runSPKMeans(D, k, dc, wc);
     }
 

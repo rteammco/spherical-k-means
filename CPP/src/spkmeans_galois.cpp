@@ -15,4 +15,14 @@ SPKMeansGalois::SPKMeansGalois(unsigned int t_) : num_threads(t_)
 }
 
 
+// returns the actual number of threads that Galois will use
+int SPKMeansGalois::getNumThreads()
+{
+    return num_threads;
+}
 
+
+ClusterData* SPKMeansGalois::runSPKMeans(float **doc_matrix, int k, int dc, int wc)
+{
+    return SPKMeans::runSPKMeans(doc_matrix, k, dc, wc);
+}
