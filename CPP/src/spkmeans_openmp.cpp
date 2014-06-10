@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <mutex>
 #include <queue>
 #include <vector>
 
@@ -96,6 +97,7 @@ ClusterData* SPKMeansOpenMP::runSPKMeans(
     // do spherical k-means loop
     float dQ = Q_THRESHOLD * 10;
     int iterations = 0;
+    mutex mut;
     while(dQ > Q_THRESHOLD) {
         iterations++;
 
@@ -116,7 +118,9 @@ ClusterData* SPKMeansOpenMP::runSPKMeans(
                     cIndx = j;
                 }
             }
+            mut.lock();
             new_partitions[cIndx].push_back(doc_matrix[i]);
+            mut.unlock();
         }
         ptimer.stop();
         p_time += ptimer.get();

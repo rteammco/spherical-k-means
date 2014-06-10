@@ -8,7 +8,7 @@ SRC = src/main.cpp src/vectors.cpp src/spkmeans.cpp src/spkmeans_openmp.cpp src/
 
 # Compile normally (includes debug information):
 all:
-	g++ -DNDEBUG -g -O3 -ffast-math -std=c++0x $(SRC) -o spkmeans $(INCLUDES) $(LINKS)
+	g++ -DNDEBUG -g -O3 -ffast-math -fopenmp -std=c++0x $(SRC) -o spkmeans $(INCLUDES) $(LINKS)
 
 
 # Remove the executable:
