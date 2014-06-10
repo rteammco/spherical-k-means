@@ -108,8 +108,8 @@ void displayResults(ClusterData *data, char **words, int num_to_show = 10)
 // of threads for Galois to use).
 // Returns -1 on fail (provided file doesn't exist), else 0 on success.
 int processArgs(int argc, char **argv,
-    string *doc_fname, string *vocab_fname,
-    unsigned int *k, unsigned int *num_threads, unsigned int *run_type)
+    string *doc_fname, string *vocab_fname, unsigned int *k,
+    unsigned int *num_threads, unsigned int *run_type, bool *show_results)
 {
     // set defaults before proceeding to check arguments
     *doc_fname = DEFAULT_DOC_FILE;
@@ -117,6 +117,7 @@ int processArgs(int argc, char **argv,
     *k = DEFAULT_K;
     *num_threads = DEFAULT_THREADS;
     *run_type = RUN_NORMAL;
+    *show_results = true;
 
     // check arguments: expected command as follows:
     // $ ./spkmeans -d docfile -w wordfile -k 2 -t 2 --galois
@@ -135,6 +136,10 @@ int processArgs(int argc, char **argv,
             *run_type = RUN_GALOIS;
         else if(arg == "--openmp")
             *run_type = RUN_OPENMP;
+
+        // also check if flag was set to squelch displaying results
+        else if(arg == "--noresults")
+            *show_results = false;
 
         // otherwise, check the given flag value
         else {
@@ -170,9 +175,9 @@ int main(int argc, char **argv)
     // get file names, and set up k and number of threads
     string doc_fname, vocab_fname;
     unsigned int k, num_threads, run_type;
-    int retval = processArgs(
-        argc, argv,
-        &doc_fname, &vocab_fname, &k, &num_threads, &run_type);
+    bool show_results;
+    int retval = processArgs(argc, argv,
+        &doc_fname, &vocab_fname, &k, &num_threads, &run_type, &show_results);
     if(retval == RETURN_ERROR) {
         printUsage();
         return -1;
@@ -216,8 +221,10 @@ int main(int argc, char **argv)
 
     // display the results of the algorithm (if anything happened)
     if(data) {
-        char **words = readWordsFile(vocab_fname.c_str(), wc);
-        displayResults(data, words, 10);
+        if(show_results) {
+            char **words = readWordsFile(vocab_fname.c_str(), wc);
+            displayResults(data, words, 10);
+        }
         delete data;
     }
 
