@@ -17,19 +17,18 @@ using namespace std;
 // Read the document data file into a spare matrix (2D array) format).
 // This function assumes that the given file name is valid.
 // Returns the 2D array (sparse matrix) - columns are document vectors.
-float** readDocFile(const char *fname, int &dc, int &wc)
+float** readDocFile(const char *fname, int *dc, int *wc, int *non_zero)
 {
     ifstream infile(fname);
     
     // get the number of documents and words in the data set
-    int nzwc; // non-zero word count (ignored)
-    infile >> dc >> wc >> nzwc;
+    infile >> (*dc) >> (*wc) >> (*non_zero);
 
     // set up the matrix and initialize it to all zeros
-    float **mat = new float*[dc];
-    for(int i=0; i<dc; i++) {
-        mat[i] = new float[wc];
-        memset(mat[i], 0, wc * sizeof(*mat[i]));
+    float **mat = new float*[(*dc)];
+    for(int i=0; i<(*dc); i++) {
+        mat[i] = new float[(*wc)];
+        memset(mat[i], 0, (*wc) * sizeof(*mat[i]));
     }
 
     // populate the matrix from the data file

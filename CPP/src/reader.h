@@ -20,8 +20,15 @@
  *      docID wordID count
  *      ...
  *  <end of file>
+ * PARAMETERS:
+ *  fname    - Name of the file.
+ *  dc       - Integer to be filled in with the number of documents.
+ *  wc       - Integer to be filled in with the number of words.
+ *  non_zero - Integer to be filled in with the number of non-zeor entries.
+ * RETURNS:
+ *  A 2D float array (matrix) representing the document matrix D.
  */
-float** readDocFile(const char *fname, int &dc, int &wc);
+float** readDocFile(const char *fname, int *dc, int *wc, int *non_zero);
 
 
 // Read the word data into a list. Words are just organized one word per line.

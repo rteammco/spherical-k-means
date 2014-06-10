@@ -47,10 +47,9 @@ using namespace std;
 
 
 
-// Prints a short message on how to use this program.
+// Prints a message on how to use this program.
 void printUsage()
 {
-    // $ ./spkmeans -d docfile -w wordfile -k 2 -t 2 --galois
     cout << "Argument options:" << endl
          << "  [-d docfile]     document file path" << endl
          << "  [-v vocabfile]   vocabulary file name" << endl
@@ -59,6 +58,7 @@ void printUsage()
          << "  [--galois]       run in Galois mode" << endl
          << "  [--openmp]       run in OpenMP mode" << endl
          << "  [--noresults]    squelch results from being printed" << endl
+         << "  [--autok]        set K automatically using input data" << endl
          << "Other commands:" << endl
          << " $ ./spkmeans --help" << endl
          << " $ ./spkmeans --version" << endl;
@@ -102,13 +102,27 @@ void displayResults(ClusterData *data, char **words, int num_to_show = 10)
 
 
 
-// Takes argc and argv from program input and parses the parameters to set
-// values for k (number of clusters) and num_threads (the maximum number
-// of threads for Galois to use).
-// Returns -1 on fail (provided file doesn't exist), else 0 on success.
+/* Takes argc and argv from program input and parses the parameters to set
+ * values for the k-means algorithm.
+ * PARAMETERS (will be filled in be dereferencing except argc and argv):
+ *  argc, argv   - The program arguments as passed into the executable.
+ *  doc_fname    - String pointer to contain the document file name.
+ *  vocab_fname  - String pointer to contain the vocabulary file name.
+ *  k            - Int pointer that will be filled with the size of k.
+ *  num_threads  - Int pointer that will be filled with the number of threads.
+ *  run_type     - Int pointer to indicate which module to run (e.g. OpenMP).
+ *  show_results - Bool flag to swith displaying results on or off.
+ *  auto_k       - Bool flag to switch choosing K automatically on or off.
+ * RETURNS:
+ *  RETURN_HELP     to print the program help message and exit.
+ *  RETURN_VERSION  to print the program version and exit.
+ *  RETURN_ERROR    to print the program help message and exit with an error.
+ *  RETURN_SUCCESS  to continue normally.
+ */
 int processArgs(int argc, char **argv,
-    string *doc_fname, string *vocab_fname, unsigned int *k,
-    unsigned int *num_threads, unsigned int *run_type, bool *show_results)
+    string *doc_fname, string *vocab_fname,
+    unsigned int *k, unsigned int *num_threads,
+    unsigned int *run_type, bool *show_results, bool *auto_k)
 {
     // set defaults before proceeding to check arguments
     *doc_fname = DEFAULT_DOC_FILE;
@@ -117,6 +131,7 @@ int processArgs(int argc, char **argv,
     *num_threads = DEFAULT_THREADS;
     *run_type = RUN_NORMAL;
     *show_results = true;
+    *auto_k = false;
 
     // check arguments: expected command as follows:
     // $ ./spkmeans -d docfile -w wordfile -k 2 -t 2 --galois
@@ -139,6 +154,10 @@ int processArgs(int argc, char **argv,
         // also check if flag was set to squelch displaying results
         else if(arg == "--noresults")
             *show_results = false;
+
+        // or if K should be selected automatically
+        else if(arg == "--autok" || arg == "--auto")
+            *auto_k = true;
 
         // otherwise, check the given flag value
         else {
@@ -174,9 +193,9 @@ int main(int argc, char **argv)
     // get file names, and set up k and number of threads
     string doc_fname, vocab_fname;
     unsigned int k, num_threads, run_type;
-    bool show_results;
-    int retval = processArgs(argc, argv,
-        &doc_fname, &vocab_fname, &k, &num_threads, &run_type, &show_results);
+    bool show_results, auto_k;
+    int retval = processArgs(argc, argv, &doc_fname, &vocab_fname,
+        &k, &num_threads, &run_type, &show_results, &auto_k);
     if(retval == RETURN_ERROR) {
         printUsage();
         return -1;
@@ -191,8 +210,8 @@ int main(int argc, char **argv)
     }
 
     // set up the sparse matrix
-    int dc, wc;
-    float **D = readDocFile(doc_fname.c_str(), dc, wc);
+    int dc, wc, non_zero;
+    float **D = readDocFile(doc_fname.c_str(), &dc, &wc, &non_zero);
     cout << dc << " documents, " << wc << " words." << endl;
     cout << "Running SPK Means on \"" << doc_fname << "\" with k=" << k;
 
