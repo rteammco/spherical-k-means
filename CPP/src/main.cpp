@@ -215,7 +215,7 @@ int main(int argc, char **argv)
     cout << "DATA: " << dc << " documents, " << wc << " words ("
          << non_zero << " non-zero entries)." << endl;
 
-    // if choosing K was set automatically, compute that here if possible
+    // if K should be set automatically, compute that here if possible
     if(auto_k) {
         int numerator = dc * wc;
         if(non_zero <= 0 || non_zero > numerator)
@@ -229,15 +229,16 @@ int main(int argc, char **argv)
     ClusterData *data = 0;
     if(run_type == RUN_GALOIS) {
         // tell Galois the max thread count
-        SPKMeansGalois spkm(num_threads);
-        cout << " [Galois: " << spkm.getNumThreads() << " threads]." << endl;
-        data = spkm.runSPKMeans(D, k, dc, wc);
+        SPKMeansGalois spkm_galois(num_threads);
+        cout << " [Galois: " << spkm_galois.getNumThreads()
+             << " threads]." << endl;
+        data = spkm_galois.runSPKMeans(D, k, dc, wc);
     }
     else if(run_type == RUN_OPENMP) {
         // tell OpenMP the max thread count
-        SPKMeansOpenMP spkm(num_threads);
+        SPKMeansOpenMP spkm_openmp(num_threads);
         cout << " [OpenMP: " << num_threads << " threads]." << endl;
-        data = spkm.runSPKMeans(D, k, dc, wc);
+        data = spkm_openmp.runSPKMeans(D, k, dc, wc);
     }
     else {
         SPKMeans spkm;
