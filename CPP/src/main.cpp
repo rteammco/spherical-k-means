@@ -209,10 +209,20 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    // set up the sparse matrix
+    // read data from the document file
     int dc, wc, non_zero;
     float **D = readDocFile(doc_fname.c_str(), &dc, &wc, &non_zero);
-    cout << dc << " documents, " << wc << " words." << endl;
+    cout << "DATA: " << dc << " documents, " << wc << " words ("
+         << non_zero << " non-zero entries)." << endl;
+
+    // if choosing K was set automatically, compute that here if possible
+    if(auto_k) {
+        int numerator = dc * wc;
+        if(non_zero <= 0 || non_zero > numerator)
+            cout << "Could not set K automatically. Using k=" << k << endl;
+        else
+            k = numerator / non_zero;
+    }
     cout << "Running SPK Means on \"" << doc_fname << "\" with k=" << k;
 
     // run the program based on the run type provided (none, openmp, galois)
