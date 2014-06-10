@@ -57,9 +57,14 @@ void printVec(float *vec, int size)
 void printUsage()
 {
     // $ ./spkmeans -d docfile -w wordfile -k 2 -t 2 --galois
-    cout << "Usage: " << endl
-         << " $ ./spkmeans [-d docfile] [-v vocabfile] [-k k] [-t numthreads] "
-         << "[--galois OR --openmp]" << endl
+    cout << "Argument options: " << endl
+         << "  [-d docfile]     document file path" << endl
+         << "  [-v vocabfile]   vocabulary file name" << endl
+         << "  [-k num]         value of k (number of clusters)" << endl
+         << "  [-t numthreads]  number of threads (when applicable)" << endl
+         << "  [--galois]       run in Galois mode" << endl
+         << "  [--openmp]       run in OpenMP mode" << endl
+         << "  [--noresults]    squelch results from being printed" << endl
          << "Other commands: " << endl
          << " $ ./spkmeans --help" << endl
          << " $ ./spkmeans --version" << endl;
