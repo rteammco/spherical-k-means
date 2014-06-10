@@ -10,11 +10,9 @@
 
 #include <fstream>
 #include <iostream>
+#include <queue>
 #include <string>
 #include <vector>
-
-#include "Galois/Galois.h"
-#include "Galois/Timer.h"
 
 #include "cluster_data.h"
 #include "reader.h"
@@ -57,7 +55,7 @@ void printVec(float *vec, int size)
 void printUsage()
 {
     // $ ./spkmeans -d docfile -w wordfile -k 2 -t 2 --galois
-    cout << "Argument options: " << endl
+    cout << "Argument options:" << endl
          << "  [-d docfile]     document file path" << endl
          << "  [-v vocabfile]   vocabulary file name" << endl
          << "  [-k num]         value of k (number of clusters)" << endl
@@ -65,7 +63,7 @@ void printUsage()
          << "  [--galois]       run in Galois mode" << endl
          << "  [--openmp]       run in OpenMP mode" << endl
          << "  [--noresults]    squelch results from being printed" << endl
-         << "Other commands: " << endl
+         << "Other commands:" << endl
          << " $ ./spkmeans --help" << endl
          << " $ ./spkmeans --version" << endl;
 }

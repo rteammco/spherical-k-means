@@ -20,17 +20,24 @@
 using namespace std;
 
 
-// CONSTRUCTOR: default num_threads to 1.
-SPKMeansOpenMP::SPKMeansOpenMP()
-{
-    num_threads = 1;
-}
-
-
 // CONSTRUCTOR: set a pre-defined number of threads.
-SPKMeansOpenMP::SPKMeansOpenMP(unsigned int t_)
+SPKMeansOpenMP::SPKMeansOpenMP(unsigned int t_) : num_threads(t_) { }
+
+
+// Overridden for parallelizing:
+float SPKMeansOpenMP::computeQ(
+    float ***partitions, int *p_sizes, float **concepts, int k, int wc)
 {
-    num_threads = t_;
+    float quality = 0;
+    //mutex mut;
+    //#pragma omp parallel for num_threads(num_threads)
+    for(int i=0; i<k; i++) {
+      //  mut.lock();
+        quality +=
+            SPKMeans::computeQ(partitions[i], p_sizes[i], concepts[i], wc);
+      //  mut.unlock();
+    }
+    return quality;
 }
 
 

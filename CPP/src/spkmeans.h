@@ -22,8 +22,8 @@ class SPKMeans {
 
     // quality computation functions
     float computeQ(float **partition, int p_size, float *concept, int wc);
-    float computeQ(float ***partitions, int *p_sizes, float **concepts,
-        int k, int wc);
+    virtual float computeQ(
+        float ***partitions, int *p_sizes, float **concepts, int k, int wc);
 
     // spkmeans algorithm computation function
     float cosineSimilarity(float *dv, float *cv, int wc);
@@ -40,16 +40,30 @@ class SPKMeans {
 class SPKMeansOpenMP : SPKMeans {
   private:
     unsigned int num_threads;
+    float computeQ(float ***partitions, int *p_sizes, float **concepts,
+        int k, int wc);
 
   public:
-    // constructors
-    SPKMeansOpenMP();
-    SPKMeansOpenMP(unsigned int t_);
+    // constructor: set the number of threads
+    SPKMeansOpenMP(unsigned int t_ = 1);
 
     // run the algorithm
     ClusterData* runSPKMeans(float **doc_matrix, int k, int dc, int wc);
+};
 
-    void setNumThreads();
+
+
+// Galois version of the SPKMeans algorithm
+class SPKMeansGalois : SPKMeans {
+  private:
+    unsigned int num_threads;
+
+  public:
+    // constructor: set the number of threads and initialize Galois
+    SPKMeansGalois(unsigned int t_ = 1);
+
+    // run the algorithm
+    ClusterData* runSPKMeans(float **doc_matrix, int k, int dc, int wc);
 };
 
 
