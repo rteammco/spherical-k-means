@@ -16,7 +16,7 @@ SPKMeansGalois::SPKMeansGalois(unsigned int t_) : num_threads(t_)
 
 
 // returns the actual number of threads that Galois will use
-int SPKMeansGalois::getNumThreads()
+unsigned int SPKMeansGalois::getNumThreads()
 {
     return num_threads;
 }

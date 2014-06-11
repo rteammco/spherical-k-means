@@ -12,6 +12,7 @@
 #include <queue>
 #include <vector>
 
+#include <omp.h>
 #include "Galois/Timer.h"
 
 #include "cluster_data.h"
@@ -21,7 +22,20 @@ using namespace std;
 
 
 // CONSTRUCTOR: set a pre-defined number of threads.
-SPKMeansOpenMP::SPKMeansOpenMP(unsigned int t_) : num_threads(t_) { }
+SPKMeansOpenMP::SPKMeansOpenMP(unsigned int t_) {
+    if(t_ > omp_get_max_threads())
+        num_threads = omp_get_max_threads();
+    else
+        num_threads = t_;
+    omp_set_num_threads(num_threads);
+}
+
+
+// returns the actual number of threads that OpenMP will use
+unsigned int SPKMeansOpenMP::getNumThreads()
+{
+    return num_threads;
+}
 
 
 // Overridden for parallelizing:
@@ -111,11 +125,12 @@ ClusterData* SPKMeansOpenMP::runSPKMeans(
         // compute new partitions based on old concept vectors
         ptimer.start();
         vector<float*> *new_partitions = new vector<float*>[k];
-        #pragma omp parallel for num_threads(num_threads)
+        #pragma omp parallel for
         for(int i=0; i<k; i++)
             new_partitions[i] = vector<float*>();
-        #pragma omp parallel for num_threads(num_threads)
+        #pragma omp parallel for
         for(int i=0; i<dc; i++) {
+            cout << omp_get_num_threads() << endl;
             int cIndx = 0;
             float cVal = cosineSimilarity(doc_matrix[i], concepts[0], wc);
             for(int j=1; j<k; j++) {
@@ -142,7 +157,7 @@ ClusterData* SPKMeansOpenMP::runSPKMeans(
         // compute new concept vectors
         ctimer.start();
         data->clearConcepts();
-        #pragma omp parallel for num_threads(num_threads)
+        #pragma omp parallel for
         for(int i=0; i<k; i++)
             concepts[i] = computeConcept(partitions[i], p_sizes[i], wc);
         ctimer.stop();

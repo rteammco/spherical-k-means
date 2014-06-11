@@ -47,6 +47,9 @@ class SPKMeansOpenMP : SPKMeans {
     // constructor: set the number of threads
     SPKMeansOpenMP(unsigned int t_ = 1);
 
+    // returns the actual number of threads Galois will use
+    unsigned int getNumThreads();
+
     // run the algorithm
     ClusterData* runSPKMeans(float **doc_matrix, int k, int dc, int wc);
 };
@@ -63,7 +66,7 @@ class SPKMeansGalois : SPKMeans {
     SPKMeansGalois(unsigned int t_ = 1);
 
     // returns the actual number of threads Galois will use
-    int getNumThreads();
+    unsigned int getNumThreads();
 
     // run the algorithm
     ClusterData* runSPKMeans(float **doc_matrix, int k, int dc, int wc);

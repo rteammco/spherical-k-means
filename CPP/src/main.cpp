@@ -237,7 +237,8 @@ int main(int argc, char **argv)
     else if(run_type == RUN_OPENMP) {
         // tell OpenMP the max thread count
         SPKMeansOpenMP spkm_openmp(num_threads);
-        cout << " [OpenMP: " << num_threads << " threads]." << endl;
+        cout << " [OpenMP: " << spkm_openmp.getNumThreads()
+             << " threads]." << endl;
         data = spkm_openmp.runSPKMeans(D, k, dc, wc);
     }
     else {
