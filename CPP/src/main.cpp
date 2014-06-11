@@ -170,6 +170,11 @@ int processArgs(int argc, char **argv,
                 *k = atoi(argv[i]);
             else if(arg == "-t") // number of threads
                 *num_threads = atoi(argv[i]);
+            else { // otherwise, invalid input so print and decrement i again
+                cout << "Unknown argument: \"" << arg
+                     << "\". Use argument --help for more info." << endl;
+                i--;
+            }
         }
     }
 
