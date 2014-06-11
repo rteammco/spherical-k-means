@@ -34,7 +34,7 @@
 
 // default parameters
 #define DEFAULT_K 2
-#define DEFAULT_THREADS 2
+#define DEFAULT_THREADS 0 // 0 means default to max
 #define DEFAULT_DOC_FILE "docs"
 
 // type of parallel implementations

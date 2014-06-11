@@ -22,8 +22,13 @@ using namespace std;
 
 
 // CONSTRUCTOR: set a pre-defined number of threads.
-SPKMeansOpenMP::SPKMeansOpenMP(unsigned int t_) {
+SPKMeansOpenMP::SPKMeansOpenMP(unsigned int t_)
+{
+    // make sure num_threads doesn't exceed the max available
     if(t_ > omp_get_max_threads())
+        num_threads = omp_get_max_threads();
+    // and it can't be less than 1 (if <= 0, set to max)
+    else if(t_ <= 0)
         num_threads = omp_get_max_threads();
     else
         num_threads = t_;
@@ -130,7 +135,6 @@ ClusterData* SPKMeansOpenMP::runSPKMeans(
             new_partitions[i] = vector<float*>();
         #pragma omp parallel for
         for(int i=0; i<dc; i++) {
-            cout << omp_get_num_threads() << endl;
             int cIndx = 0;
             float cVal = cosineSimilarity(doc_matrix[i], concepts[0], wc);
             for(int j=1; j<k; j++) {

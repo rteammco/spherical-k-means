@@ -8,9 +8,12 @@
 
 
 // constructor: set number of threads and initialize Galois
-SPKMeansGalois::SPKMeansGalois(unsigned int t_) : num_threads(t_)
+SPKMeansGalois::SPKMeansGalois(unsigned int t_)
 {
-    Galois::setActiveThreads(num_threads);
+    // if number of threads given is <= 0, set to max
+    if(t_ <= 0)
+        t_ = 2; // TODO - no support in API for this?
+    Galois::setActiveThreads(t_);
     num_threads = Galois::getActiveThreads();
 }
 
