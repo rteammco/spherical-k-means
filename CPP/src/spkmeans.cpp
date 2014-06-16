@@ -19,6 +19,26 @@ using namespace std;
 
 
 
+// Constructor: initialize variables and document norms.
+SPKMeans::SPKMeans(float **doc_matrix_, int k_, int dc_, int wc_)
+    : doc_matrix(doc_matrix_), k(k_), dc(dc_), wc(wc_)
+{
+    // init the doc vector norms
+    doc_norms = new float[dc];
+    for(int i=0; i<dc; i++)
+        doc_norms[i] = vec_norm(doc_matrix[i], wc);
+}
+
+
+
+// Destructor: clean up document norms array.
+SPKMeans::~SPKMeans()
+{
+    delete doc_norms;
+}
+
+
+
 // Applies the TXN scheme to each document vector of the given matrix.
 // TXN effectively just normalizes each of the document vectors.
 void SPKMeans::txnScheme(float **doc_matrix, int dc, int wc)

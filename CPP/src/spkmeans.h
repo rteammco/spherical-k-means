@@ -17,6 +17,15 @@
 // Abstract implementation of the SPKMeans algorithm
 class SPKMeans {
   protected:
+    // clustering variables
+    float **doc_matrix;
+    int k;
+    int dc;
+    int wc;
+
+    // cache for document norms so they're not recomputed each time
+    float *doc_norms;
+    
     // matrix setup schemes
     void txnScheme(float **doc_matrix, int dc, int wc);
 
@@ -30,6 +39,11 @@ class SPKMeans {
     float* computeConcept(float **partition, int p_size, int wc);
 
   public:
+    // initialize wc, dc, k, and doc_matrix, and document norms
+    SPKMeans(float **doc_matrix_, int k_, int dc_, int wc_);
+    // clean up memory
+    ~SPKMeans();
+
     // the algorithm is implemented differently by each type of paradigm
     virtual ClusterData* runSPKMeans(float **doc_matrix, int k, int dc, int wc);
 };
@@ -45,7 +59,8 @@ class SPKMeansOpenMP : SPKMeans {
 
   public:
     // constructor: set the number of threads
-    SPKMeansOpenMP(unsigned int t_ = 1);
+    SPKMeansOpenMP(float **doc_matrix_, int k_, int dc_, int wc_,
+        unsigned int t_ = 1);
 
     // returns the actual number of threads Galois will use
     unsigned int getNumThreads();
@@ -63,7 +78,8 @@ class SPKMeansGalois : SPKMeans {
 
   public:
     // constructor: set the number of threads and initialize Galois
-    SPKMeansGalois(unsigned int t_ = 1);
+    SPKMeansGalois(float **doc_matrix_, int k_, int dc_, int wc_,
+        unsigned int t_ = 1);
 
     // returns the actual number of threads Galois will use
     unsigned int getNumThreads();

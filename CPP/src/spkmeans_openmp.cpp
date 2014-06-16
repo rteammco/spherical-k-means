@@ -22,7 +22,9 @@ using namespace std;
 
 
 // CONSTRUCTOR: set a pre-defined number of threads.
-SPKMeansOpenMP::SPKMeansOpenMP(unsigned int t_)
+SPKMeansOpenMP::SPKMeansOpenMP(
+    float **doc_matrix_, int k_, int dc_, int wc_, unsigned int t_)
+    : SPKMeans::SPKMeans(doc_matrix_, k_, dc_, wc_)
 {
     // make sure num_threads doesn't exceed the max available
     if(t_ > omp_get_max_threads())

@@ -234,20 +234,20 @@ int main(int argc, char **argv)
     ClusterData *data = 0;
     if(run_type == RUN_GALOIS) {
         // tell Galois the max thread count
-        SPKMeansGalois spkm_galois(num_threads);
+        SPKMeansGalois spkm_galois(D, k, dc, wc, num_threads);
         cout << " [Galois: " << spkm_galois.getNumThreads()
              << " threads]." << endl;
         data = spkm_galois.runSPKMeans(D, k, dc, wc);
     }
     else if(run_type == RUN_OPENMP) {
         // tell OpenMP the max thread count
-        SPKMeansOpenMP spkm_openmp(num_threads);
+        SPKMeansOpenMP spkm_openmp(D, k, dc, wc, num_threads);
         cout << " [OpenMP: " << spkm_openmp.getNumThreads()
              << " threads]." << endl;
         data = spkm_openmp.runSPKMeans(D, k, dc, wc);
     }
     else {
-        SPKMeans spkm;
+        SPKMeans spkm(D, k, dc, wc);
         cout << " [single thread]." << endl;
         data = spkm.runSPKMeans(D, k, dc, wc);
     }
