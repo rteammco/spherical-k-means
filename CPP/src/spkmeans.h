@@ -25,6 +25,9 @@ class SPKMeans {
 
     // cache for document norms so they're not recomputed each time
     float *doc_norms;
+
+    // optimization flag
+    bool optimize;
     
     // matrix setup schemes
     void txnScheme();
@@ -43,6 +46,10 @@ class SPKMeans {
     // clean up memory
     ~SPKMeans();
 
+    // switches for optimization
+    void disableOptimization();
+    void enableOptimization();
+
     // the algorithm is implemented differently by each type of paradigm
     virtual ClusterData* runSPKMeans();
 };
@@ -50,7 +57,7 @@ class SPKMeans {
 
 
 // OpenMP version of the SPKMeans algorithm
-class SPKMeansOpenMP : SPKMeans {
+class SPKMeansOpenMP : public SPKMeans {
   private:
     unsigned int num_threads;
     float computeQ(float ***partitions, int *p_sizes, float **concepts);
@@ -70,7 +77,7 @@ class SPKMeansOpenMP : SPKMeans {
 
 
 // Galois version of the SPKMeans algorithm
-class SPKMeansGalois : SPKMeans {
+class SPKMeansGalois : public SPKMeans {
   private:
     unsigned int num_threads;
 

@@ -27,6 +27,9 @@ SPKMeans::SPKMeans(float **doc_matrix_, int k_, int dc_, int wc_)
     doc_norms = new float[dc];
     for(int i=0; i<dc; i++)
         doc_norms[i] = vec_norm(doc_matrix[i], wc);
+
+    // initialize optimization to true (optimization will happen)
+    optimize = true;
 }
 
 
@@ -35,6 +38,22 @@ SPKMeans::SPKMeans(float **doc_matrix_, int k_, int dc_, int wc_)
 SPKMeans::~SPKMeans()
 {
     delete doc_norms;
+}
+
+
+
+// Disables optimization for testing purposes.
+void SPKMeans::disableOptimization()
+{
+    optimize = false;
+}
+
+
+
+// Enables optimization if it was disabled.
+void SPKMeans::enableOptimization()
+{
+    optimize = true;
 }
 
 
@@ -77,8 +96,14 @@ float SPKMeans::computeQ(float ***partitions, int *p_sizes, float **concepts)
 // TODO - we can cache the norms of all of the document vectors
 float SPKMeans::cosineSimilarity(float *cv, int doc_index)
 {
-    return vec_dot(doc_matrix[doc_index], cv, wc) /
-        (doc_norms[doc_index] * vec_norm(cv, wc));
+    if(!optimize) {
+        return vec_dot(doc_matrix[doc_index], cv, wc) /
+            (vec_norm(doc_matrix[doc_index], wc) * vec_norm(cv, wc));
+    }
+    else {
+        return vec_dot(doc_matrix[doc_index], cv, wc) /
+            (doc_norms[doc_index] * vec_norm(cv, wc));
+    }
 }
 
 

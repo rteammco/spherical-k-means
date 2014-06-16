@@ -59,6 +59,7 @@ void printUsage()
          << "  [--openmp]       run in OpenMP mode" << endl
          << "  [--noresults]    squelch results from being printed" << endl
          << "  [--autok]        set K automatically using input data" << endl
+         << "  [--noop]         turn off do any extra optimizations" << endl
          << "Other commands:" << endl
          << " $ ./spkmeans --help" << endl
          << " $ ./spkmeans --version" << endl;
@@ -121,8 +122,8 @@ void displayResults(ClusterData *data, char **words, int num_to_show = 10)
  */
 int processArgs(int argc, char **argv,
     string *doc_fname, string *vocab_fname,
-    unsigned int *k, unsigned int *num_threads,
-    unsigned int *run_type, bool *show_results, bool *auto_k)
+    unsigned int *k, unsigned int *num_threads, unsigned int *run_type,
+    bool *show_results, bool *auto_k, bool *optimize)
 {
     // set defaults before proceeding to check arguments
     *doc_fname = DEFAULT_DOC_FILE;
@@ -132,6 +133,7 @@ int processArgs(int argc, char **argv,
     *run_type = RUN_NORMAL;
     *show_results = true;
     *auto_k = false;
+    *optimize = true;
 
     // check arguments: expected command as follows:
     // $ ./spkmeans -d docfile -w wordfile -k 2 -t 2 --galois
@@ -154,6 +156,8 @@ int processArgs(int argc, char **argv,
         // also check if flag was set to squelch displaying results
         else if(arg == "--noresults")
             *show_results = false;
+        else if(arg == "--noop")
+            *optimize = false;
 
         // or if K should be selected automatically
         else if(arg == "--autok" || arg == "--auto")
@@ -198,9 +202,9 @@ int main(int argc, char **argv)
     // get file names, and set up k and number of threads
     string doc_fname, vocab_fname;
     unsigned int k, num_threads, run_type;
-    bool show_results, auto_k;
+    bool show_results, auto_k, optimize;
     int retval = processArgs(argc, argv, &doc_fname, &vocab_fname,
-        &k, &num_threads, &run_type, &show_results, &auto_k);
+        &k, &num_threads, &run_type, &show_results, &auto_k, &optimize);
     if(retval == RETURN_ERROR) {
         printUsage();
         return -1;
@@ -235,6 +239,8 @@ int main(int argc, char **argv)
     if(run_type == RUN_GALOIS) {
         // tell Galois the max thread count
         SPKMeansGalois spkm_galois(D, k, dc, wc, num_threads);
+        if(!optimize)
+            spkm_galois.disableOptimization();
         cout << " [Galois: " << spkm_galois.getNumThreads()
              << " threads]." << endl;
         data = spkm_galois.runSPKMeans();
@@ -242,12 +248,16 @@ int main(int argc, char **argv)
     else if(run_type == RUN_OPENMP) {
         // tell OpenMP the max thread count
         SPKMeansOpenMP spkm_openmp(D, k, dc, wc, num_threads);
+        if(!optimize)
+            spkm_openmp.disableOptimization();
         cout << " [OpenMP: " << spkm_openmp.getNumThreads()
              << " threads]." << endl;
         data = spkm_openmp.runSPKMeans();
     }
     else {
         SPKMeans spkm(D, k, dc, wc);
+        if(!optimize)
+            spkm.disableOptimization();
         cout << " [single thread]." << endl;
         data = spkm.runSPKMeans();
     }
