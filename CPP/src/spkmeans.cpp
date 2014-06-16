@@ -41,7 +41,7 @@ SPKMeans::~SPKMeans()
 
 // Applies the TXN scheme to each document vector of the given matrix.
 // TXN effectively just normalizes each of the document vectors.
-void SPKMeans::txnScheme(float **doc_matrix, int dc, int wc)
+void SPKMeans::txnScheme()
 {
     for(int i=0; i<dc; i++)
         vec_normalize(doc_matrix[i], wc);
@@ -51,7 +51,7 @@ void SPKMeans::txnScheme(float **doc_matrix, int dc, int wc)
 
 // Returns the quality of the given partition by doing a dot product against
 // its given concept vector.
-float SPKMeans::computeQ(float **partition, int p_size, float *concept, int wc)
+float SPKMeans::computeQ(float **partition, int p_size, float *concept)
 {
     float *sum_p = vec_sum(partition, wc, p_size);
     float quality = vec_dot(sum_p, concept, wc);
@@ -63,12 +63,11 @@ float SPKMeans::computeQ(float **partition, int p_size, float *concept, int wc)
 
 // Returns the total quality of all partitions by summing the qualities of
 // each individual partition.
-float SPKMeans::computeQ(float ***partitions, int *p_sizes, float **concepts,
-    int k, int wc)
+float SPKMeans::computeQ(float ***partitions, int *p_sizes, float **concepts)
 {
     float quality = 0;
     for(int i=0; i<k; i++)
-        quality += computeQ(partitions[i], p_sizes[i], concepts[i], wc);
+        quality += computeQ(partitions[i], p_sizes[i], concepts[i]);
     return quality;
 }
 
@@ -76,7 +75,7 @@ float SPKMeans::computeQ(float ***partitions, int *p_sizes, float **concepts,
 
 // Computes the cosine similarity value of the two given vectors (dv and cv).
 // TODO - we can cache the norms of all of the document vectors
-float SPKMeans::cosineSimilarity(float *dv, float *cv, int wc)
+float SPKMeans::cosineSimilarity(float *dv, float *cv)
 {
     return vec_dot(dv, cv, wc) / (vec_norm(dv, wc) * vec_norm(cv, wc));
 }
@@ -85,7 +84,7 @@ float SPKMeans::cosineSimilarity(float *dv, float *cv, int wc)
 
 // Computes the concept vector of the given partition. A partition is an array
 // of document vectors, and the concept vector will be allocated and populated.
-float* SPKMeans::computeConcept(float **partition, int p_size, int wc)
+float* SPKMeans::computeConcept(float **partition, int p_size)
 {
     float *cv = vec_sum(partition, wc, p_size);
     vec_multiply(cv, wc, (1.0 / wc));
@@ -97,8 +96,7 @@ float* SPKMeans::computeConcept(float **partition, int p_size, int wc)
 
 // Runs the spherical k-means algorithm on the given sparse matrix D and
 // clusters the data into k partitions. Non-parallel (standard) version.
-ClusterData* SPKMeans::runSPKMeans(
-    float **doc_matrix, int k, int dc, int wc)
+ClusterData* SPKMeans::runSPKMeans()
 {
     // keep track of the run time for this algorithm
     Galois::Timer timer;
@@ -106,7 +104,7 @@ ClusterData* SPKMeans::runSPKMeans(
 
 
     // apply the TXN scheme on the document vectors (normalize them)
-    txnScheme(doc_matrix, dc, wc);
+    txnScheme();
 
 
     // initialize the data arrays; keep track of the arrays locally
@@ -139,11 +137,11 @@ ClusterData* SPKMeans::runSPKMeans(
 
     // compute concept vectors
     for(int i=0; i<k; i++)
-        concepts[i] = computeConcept(partitions[i], p_sizes[i], wc);
+        concepts[i] = computeConcept(partitions[i], p_sizes[i]);
 
 
     // compute initial quality of the partitions
-    float quality = computeQ(partitions, p_sizes, concepts, k, wc);
+    float quality = computeQ(partitions, p_sizes, concepts);
     cout << "Initial quality: " << quality << endl;
 
 
@@ -168,9 +166,9 @@ ClusterData* SPKMeans::runSPKMeans(
             new_partitions[i] = vector<float*>();
         for(int i=0; i<dc; i++) {
             int cIndx = 0;
-            float cVal = cosineSimilarity(doc_matrix[i], concepts[0], wc);
+            float cVal = cosineSimilarity(doc_matrix[i], concepts[0]);
             for(int j=1; j<k; j++) {
-                float new_cVal = cosineSimilarity(doc_matrix[i], concepts[j], wc);
+                float new_cVal = cosineSimilarity(doc_matrix[i], concepts[j]);
                 if(new_cVal > cVal) {
                     cVal = new_cVal;
                     cIndx = j;
@@ -192,13 +190,13 @@ ClusterData* SPKMeans::runSPKMeans(
         ctimer.start();
         data->clearConcepts();
         for(int i=0; i<k; i++)
-            concepts[i] = computeConcept(partitions[i], p_sizes[i], wc);
+            concepts[i] = computeConcept(partitions[i], p_sizes[i]);
         ctimer.stop();
         c_time += ctimer.get();
 
         // compute quality of new partitioning
         qtimer.start();
-        float n_quality = computeQ(partitions, p_sizes, concepts, k, wc);
+        float n_quality = computeQ(partitions, p_sizes, concepts);
         dQ = n_quality - quality;
         quality = n_quality;
         qtimer.stop();

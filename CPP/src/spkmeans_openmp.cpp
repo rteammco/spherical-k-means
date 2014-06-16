@@ -47,7 +47,7 @@ unsigned int SPKMeansOpenMP::getNumThreads()
 
 // Overridden for parallelizing:
 float SPKMeansOpenMP::computeQ(
-    float ***partitions, int *p_sizes, float **concepts, int k, int wc)
+    float ***partitions, int *p_sizes, float **concepts)
 {
     float quality = 0;
     //mutex mut;
@@ -55,7 +55,7 @@ float SPKMeansOpenMP::computeQ(
     for(int i=0; i<k; i++) {
       //  mut.lock();
         quality +=
-            SPKMeans::computeQ(partitions[i], p_sizes[i], concepts[i], wc);
+            SPKMeans::computeQ(partitions[i], p_sizes[i], concepts[i]);
       //  mut.unlock();
     }
     return quality;
@@ -64,8 +64,7 @@ float SPKMeansOpenMP::computeQ(
 
 // Runs the spherical k-means algorithm on the given sparse matrix D and
 // clusters the data into k partitions.
-ClusterData* SPKMeansOpenMP::runSPKMeans(
-    float **doc_matrix, int k, int dc, int wc)
+ClusterData* SPKMeansOpenMP::runSPKMeans()
 {
     // keep track of the run time for this algorithm
     Galois::Timer timer;
@@ -73,7 +72,7 @@ ClusterData* SPKMeansOpenMP::runSPKMeans(
 
 
     // apply the TXN scheme on the document vectors (normalize them)
-    txnScheme(doc_matrix, dc, wc);
+    txnScheme();
 
 
     // initialize the data arrays; keep track of the arrays locally
@@ -106,11 +105,11 @@ ClusterData* SPKMeansOpenMP::runSPKMeans(
 
     // compute concept vectors
     for(int i=0; i<k; i++)
-        concepts[i] = computeConcept(partitions[i], p_sizes[i], wc);
+        concepts[i] = computeConcept(partitions[i], p_sizes[i]);
 
 
     // compute initial quality of the partitions
-    float quality = computeQ(partitions, p_sizes, concepts, k, wc);
+    float quality = computeQ(partitions, p_sizes, concepts);
     cout << "Initial quality: " << quality << endl;
 
 
@@ -138,9 +137,9 @@ ClusterData* SPKMeansOpenMP::runSPKMeans(
         #pragma omp parallel for
         for(int i=0; i<dc; i++) {
             int cIndx = 0;
-            float cVal = cosineSimilarity(doc_matrix[i], concepts[0], wc);
+            float cVal = cosineSimilarity(doc_matrix[i], concepts[0]);
             for(int j=1; j<k; j++) {
-                float new_cVal = cosineSimilarity(doc_matrix[i], concepts[j], wc);
+                float new_cVal = cosineSimilarity(doc_matrix[i], concepts[j]);
                 if(new_cVal > cVal) {
                     cVal = new_cVal;
                     cIndx = j;
@@ -165,13 +164,13 @@ ClusterData* SPKMeansOpenMP::runSPKMeans(
         data->clearConcepts();
         #pragma omp parallel for
         for(int i=0; i<k; i++)
-            concepts[i] = computeConcept(partitions[i], p_sizes[i], wc);
+            concepts[i] = computeConcept(partitions[i], p_sizes[i]);
         ctimer.stop();
         c_time += ctimer.get();
 
         // compute quality of new partitioning
         qtimer.start();
-        float n_quality = computeQ(partitions, p_sizes, concepts, k, wc);
+        float n_quality = computeQ(partitions, p_sizes, concepts);
         dQ = n_quality - quality;
         quality = n_quality;
         qtimer.stop();

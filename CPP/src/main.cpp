@@ -237,19 +237,19 @@ int main(int argc, char **argv)
         SPKMeansGalois spkm_galois(D, k, dc, wc, num_threads);
         cout << " [Galois: " << spkm_galois.getNumThreads()
              << " threads]." << endl;
-        data = spkm_galois.runSPKMeans(D, k, dc, wc);
+        data = spkm_galois.runSPKMeans();
     }
     else if(run_type == RUN_OPENMP) {
         // tell OpenMP the max thread count
         SPKMeansOpenMP spkm_openmp(D, k, dc, wc, num_threads);
         cout << " [OpenMP: " << spkm_openmp.getNumThreads()
              << " threads]." << endl;
-        data = spkm_openmp.runSPKMeans(D, k, dc, wc);
+        data = spkm_openmp.runSPKMeans();
     }
     else {
         SPKMeans spkm(D, k, dc, wc);
         cout << " [single thread]." << endl;
-        data = spkm.runSPKMeans(D, k, dc, wc);
+        data = spkm.runSPKMeans();
     }
 
     // display the results of the algorithm (if anything happened)

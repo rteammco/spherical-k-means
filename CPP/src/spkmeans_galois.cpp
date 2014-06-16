@@ -27,7 +27,7 @@ unsigned int SPKMeansGalois::getNumThreads()
 }
 
 
-ClusterData* SPKMeansGalois::runSPKMeans(float **doc_matrix, int k, int dc, int wc)
+ClusterData* SPKMeansGalois::runSPKMeans()
 {
-    return SPKMeans::runSPKMeans(doc_matrix, k, dc, wc);
+    return SPKMeans::runSPKMeans();
 }

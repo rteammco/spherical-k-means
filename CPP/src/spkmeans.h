@@ -27,16 +27,15 @@ class SPKMeans {
     float *doc_norms;
     
     // matrix setup schemes
-    void txnScheme(float **doc_matrix, int dc, int wc);
+    void txnScheme();
 
     // quality computation functions
-    float computeQ(float **partition, int p_size, float *concept, int wc);
-    virtual float computeQ(
-        float ***partitions, int *p_sizes, float **concepts, int k, int wc);
+    float computeQ(float **partition, int p_size, float *concept);
+    virtual float computeQ(float ***partitions, int *p_sizes, float **concepts);
 
     // spkmeans algorithm computation function
-    float cosineSimilarity(float *dv, float *cv, int wc);
-    float* computeConcept(float **partition, int p_size, int wc);
+    float cosineSimilarity(float *dv, float *cv);
+    float* computeConcept(float **partition, int p_size);
 
   public:
     // initialize wc, dc, k, and doc_matrix, and document norms
@@ -45,7 +44,7 @@ class SPKMeans {
     ~SPKMeans();
 
     // the algorithm is implemented differently by each type of paradigm
-    virtual ClusterData* runSPKMeans(float **doc_matrix, int k, int dc, int wc);
+    virtual ClusterData* runSPKMeans();
 };
 
 
@@ -54,8 +53,7 @@ class SPKMeans {
 class SPKMeansOpenMP : SPKMeans {
   private:
     unsigned int num_threads;
-    float computeQ(float ***partitions, int *p_sizes, float **concepts,
-        int k, int wc);
+    float computeQ(float ***partitions, int *p_sizes, float **concepts);
 
   public:
     // constructor: set the number of threads
@@ -66,7 +64,7 @@ class SPKMeansOpenMP : SPKMeans {
     unsigned int getNumThreads();
 
     // run the algorithm
-    ClusterData* runSPKMeans(float **doc_matrix, int k, int dc, int wc);
+    ClusterData* runSPKMeans();
 };
 
 
@@ -85,7 +83,7 @@ class SPKMeansGalois : SPKMeans {
     unsigned int getNumThreads();
 
     // run the algorithm
-    ClusterData* runSPKMeans(float **doc_matrix, int k, int dc, int wc);
+    ClusterData* runSPKMeans();
 };
 
 
