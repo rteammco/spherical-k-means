@@ -68,6 +68,42 @@ void SPKMeans::txnScheme()
 
 
 
+// Initializes the first partition (randomly or otherwise assigned) to provide
+// a starting point for the clustering algorithm.
+float SPKMeans::initPartitions(ClusterData *data)
+{
+    // create the first arbitrary partitioning
+    int split = floor(dc / k);
+    cout << "Split = " << split << endl;
+    int base = 1;
+    for(int i=0; i<k; i++) {
+        int top = base + split - 1;
+        if(i == k-1)
+            top = dc;
+
+        int p_size = top - base + 1;
+        data->p_sizes[i] = p_size;
+        cout << "Created new partition of size " << p_size << endl;
+
+        data->partitions[i] = new float*[p_size];
+        for(int j=0; j<p_size; j++)
+            data->partitions[i][j] = doc_matrix[base + j - 1];
+
+        base = base + split;
+    }
+
+    // compute the initial concept vectors
+    for(int i=0; i<k; i++) {
+        data->concepts[i] =
+            computeConcept(data->partitions[i], data->p_sizes[i]);
+    }
+
+    // compute initial quality of the partitions
+    return computeQ(data->partitions, data->p_sizes, data->concepts);
+}
+
+
+
 // Returns the quality of the given partition by doing a dot product against
 // its given concept vector.
 float SPKMeans::computeQ(float **partition, int p_size, float *concept)
@@ -128,10 +164,8 @@ ClusterData* SPKMeans::runSPKMeans()
     Galois::Timer timer;
     timer.start();
 
-
     // apply the TXN scheme on the document vectors (normalize them)
     txnScheme();
-
 
     // initialize the data arrays; keep track of the arrays locally
     ClusterData *data = new ClusterData(k, dc, wc);
@@ -139,37 +173,9 @@ ClusterData* SPKMeans::runSPKMeans()
     int *p_sizes = data->p_sizes;
     float **concepts = data->concepts;
 
-
-    // create the first arbitrary partitioning
-    int split = floor(dc / k);
-    cout << "Split = " << split << endl;
-    int base = 1;
-    for(int i=0; i<k; i++) {
-        int top = base + split - 1;
-        if(i == k-1)
-            top = dc;
-
-        int p_size = top - base + 1;
-        p_sizes[i] = p_size;
-        cout << "Created new partition of size " << p_size << endl;
-
-        partitions[i] = new float*[p_size];
-        for(int j=0; j<p_size; j++)
-            partitions[i][j] = doc_matrix[base + j - 1];
-
-        base = base + split;
-    }
-
-
-    // compute concept vectors
-    for(int i=0; i<k; i++)
-        concepts[i] = computeConcept(partitions[i], p_sizes[i]);
-
-
-    // compute initial quality of the partitions
-    float quality = computeQ(partitions, p_sizes, concepts);
+    // choose an initial partitioning, and get concepts and quality
+    float quality = initPartitions(data);
     cout << "Initial quality: " << quality << endl;
-
 
     // keep track of all individual component times for analysis
     Galois::Timer ptimer;

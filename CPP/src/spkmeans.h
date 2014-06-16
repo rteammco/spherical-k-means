@@ -32,6 +32,9 @@ class SPKMeans {
     // matrix setup schemes
     void txnScheme();
 
+    // initial partition setup
+    float initPartitions(ClusterData *data);
+
     // quality computation functions
     float computeQ(float **partition, int p_size, float *concept);
     virtual float computeQ(float ***partitions, int *p_sizes, float **concepts);
