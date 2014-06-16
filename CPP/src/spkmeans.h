@@ -34,7 +34,7 @@ class SPKMeans {
     virtual float computeQ(float ***partitions, int *p_sizes, float **concepts);
 
     // spkmeans algorithm computation function
-    float cosineSimilarity(float *dv, float *cv);
+    float cosineSimilarity(float *cv, int doc_index);
     float* computeConcept(float **partition, int p_size);
 
   public:

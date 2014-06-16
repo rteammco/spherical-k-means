@@ -137,9 +137,9 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
         #pragma omp parallel for
         for(int i=0; i<dc; i++) {
             int cIndx = 0;
-            float cVal = cosineSimilarity(doc_matrix[i], concepts[0]);
+            float cVal = cosineSimilarity(concepts[0], i);
             for(int j=1; j<k; j++) {
-                float new_cVal = cosineSimilarity(doc_matrix[i], concepts[j]);
+                float new_cVal = cosineSimilarity(concepts[j], i);
                 if(new_cVal > cVal) {
                     cVal = new_cVal;
                     cIndx = j;

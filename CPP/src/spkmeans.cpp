@@ -75,9 +75,10 @@ float SPKMeans::computeQ(float ***partitions, int *p_sizes, float **concepts)
 
 // Computes the cosine similarity value of the two given vectors (dv and cv).
 // TODO - we can cache the norms of all of the document vectors
-float SPKMeans::cosineSimilarity(float *dv, float *cv)
+float SPKMeans::cosineSimilarity(float *cv, int doc_index)
 {
-    return vec_dot(dv, cv, wc) / (vec_norm(dv, wc) * vec_norm(cv, wc));
+    return vec_dot(doc_matrix[doc_index], cv, wc) /
+        (doc_norms[doc_index] * vec_norm(cv, wc));
 }
 
 
@@ -166,9 +167,9 @@ ClusterData* SPKMeans::runSPKMeans()
             new_partitions[i] = vector<float*>();
         for(int i=0; i<dc; i++) {
             int cIndx = 0;
-            float cVal = cosineSimilarity(doc_matrix[i], concepts[0]);
+            float cVal = cosineSimilarity(concepts[0], i);
             for(int j=1; j<k; j++) {
-                float new_cVal = cosineSimilarity(doc_matrix[i], concepts[j]);
+                float new_cVal = cosineSimilarity(concepts[j], i);
                 if(new_cVal > cVal) {
                     cVal = new_cVal;
                     cIndx = j;
