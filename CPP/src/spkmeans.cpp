@@ -76,8 +76,6 @@ void SPKMeans::reportTime(int iterations, float total_time,
              << "   quality [" << q_time << "] ("
                 << (q_time/total)*100 << "%)" << endl;
     }
-
-
 }
 
 
@@ -217,9 +215,13 @@ ClusterData* SPKMeans::runSPKMeans()
 
         // compute new partitions based on old concept vectors
         ptimer.start();
+        // TODO - new_partitions isn't deleted (memory leak?)
         vector<float*> *new_partitions = new vector<float*>[k];
         for(int i=0; i<k; i++)
             new_partitions[i] = vector<float*>();
+        // TODO - if concept vector didn't change (i.e. partition didn't
+        //        change), no need to recompute cosine similarity for
+        //        any of the documents.
         for(int i=0; i<dc; i++) {
             int cIndx = 0;
             float cVal = cosineSimilarity(concepts[0], i);
@@ -245,6 +247,8 @@ ClusterData* SPKMeans::runSPKMeans()
         // compute new concept vectors
         ctimer.start();
         data->clearConcepts();
+        // TODO - if a partition didn't change since last iteration, no need
+        //        to recompute its concept vector.
         for(int i=0; i<k; i++)
             concepts[i] = computeConcept(partitions[i], p_sizes[i]);
         ctimer.stop();
