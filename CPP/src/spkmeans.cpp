@@ -207,11 +207,22 @@ ClusterData* SPKMeans::runSPKMeans()
     float c_time = 0;
     float q_time = 0;
 
+    bool changed[k];
+    for(int i=0; i<k; i++)
+        changed[i] = true;
+    float cValues[k*dc];
+
     // do spherical k-means loop
     float dQ = Q_THRESHOLD * 10;
     int iterations = 0;
     while(dQ > Q_THRESHOLD) {
         iterations++;
+
+        int num_same = 0;
+        for (int i=0; i<k; i++)
+            if(!changed[i])
+                num_same++;
+        cout << num_same << " partitions are the same." << endl;
 
         // compute new partitions based on old concept vectors
         ptimer.start();
@@ -224,18 +235,33 @@ ClusterData* SPKMeans::runSPKMeans()
         //        any of the documents.
         for(int i=0; i<dc; i++) {
             int cIndx = 0;
-            float cVal = cosineSimilarity(concepts[0], i);
+            if(changed[0])
+                cValues[i*k] = cosineSimilarity(concepts[0], i);
             for(int j=1; j<k; j++) {
-                float new_cVal = cosineSimilarity(concepts[j], i);
-                if(new_cVal > cVal) {
-                    cVal = new_cVal;
+                if(changed[j])
+                    cValues[i*k + j] = cosineSimilarity(concepts[j], i);
+                if(cValues[i*k + j] > cValues[i*k + cIndx])
                     cIndx = j;
-                }
             }
             new_partitions[cIndx].push_back(doc_matrix[i]);
         }
         ptimer.stop();
         p_time += ptimer.get();
+
+        // check if partitions changed since last time
+        for(int i=0; i<k; i++) {
+            if(p_sizes[i] == new_partitions[i].size()) {
+                changed[i] = false;
+                for(int j=0; j<p_sizes[i]; j++) {
+                    if(partitions[i][j] != new_partitions[i][j]) {
+                        changed[i] = true;
+                        break;
+                    }
+                }
+            }
+            else
+                changed[i] = true;
+        }
 
         // transfer the new partitions to the partitions array
         data->clearPartitions();
