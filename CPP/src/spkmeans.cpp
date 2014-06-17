@@ -37,7 +37,7 @@ SPKMeans::SPKMeans(float **doc_matrix_, int k_, int dc_, int wc_)
 // Destructor: clean up document norms array.
 SPKMeans::~SPKMeans()
 {
-    delete doc_norms;
+    delete[] doc_norms;
 }
 
 
@@ -132,7 +132,7 @@ float SPKMeans::computeQ(float **partition, int p_size, float *concept)
 {
     float *sum_p = vec_sum(partition, wc, p_size);
     float quality = vec_dot(sum_p, concept, wc);
-    delete sum_p;
+    delete[] sum_p;
     return quality;
 }
 
@@ -274,7 +274,7 @@ ClusterData* SPKMeans::runSPKMeans()
         for(int i=0; i<k; i++) {
             // only update concept vectors if partition has changed
             if(changed[i]) {
-                delete concepts[i];
+                delete[] concepts[i];
                 concepts[i] = computeConcept(partitions[i], p_sizes[i]);
             }
         }

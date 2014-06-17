@@ -68,7 +68,7 @@ struct ClusterData
     void clearPartitions()
     {
         for(int i=0; i<k; i++)
-            delete partitions[i];
+            delete[] partitions[i];
     }
 
 
@@ -77,7 +77,7 @@ struct ClusterData
     void clearConcepts()
     {
         for(int i=0; i<k; i++)
-            delete concepts[i];
+            delete[] concepts[i];
     }
 
 
@@ -86,16 +86,16 @@ struct ClusterData
     {
         if(partitions != 0) {
             clearPartitions();
-            delete partitions;
+            delete[] partitions;
             partitions = 0;
         }
         if(p_sizes != 0) {
-            delete p_sizes;
+            delete[] p_sizes;
             p_sizes = 0;
         }
         if(concepts != 0) {
             clearConcepts();
-            delete concepts;
+            delete[] concepts;
             concepts = 0;
         }
     }
