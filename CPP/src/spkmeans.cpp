@@ -230,11 +230,9 @@ ClusterData* SPKMeans::runSPKMeans()
         vector<float*> *new_partitions = new vector<float*>[k];
         for(int i=0; i<k; i++)
             new_partitions[i] = vector<float*>();
-        // TODO - if concept vector didn't change (i.e. partition didn't
-        //        change), no need to recompute cosine similarity for
-        //        any of the documents.
         for(int i=0; i<dc; i++) {
             int cIndx = 0;
+            // only update cosine similarities if partitions have changed
             if(changed[0])
                 cValues[i*k] = cosineSimilarity(concepts[0], i);
             for(int j=1; j<k; j++) {
@@ -272,11 +270,14 @@ ClusterData* SPKMeans::runSPKMeans()
 
         // compute new concept vectors
         ctimer.start();
-        data->clearConcepts();
-        // TODO - if a partition didn't change since last iteration, no need
-        //        to recompute its concept vector.
-        for(int i=0; i<k; i++)
-            concepts[i] = computeConcept(partitions[i], p_sizes[i]);
+        //data->clearConcepts();
+        for(int i=0; i<k; i++) {
+            // only update concept vectors if partition has changed
+            if(changed[i]) {
+                delete concepts[i];
+                concepts[i] = computeConcept(partitions[i], p_sizes[i]);
+            }
+        }
         ctimer.stop();
         c_time += ctimer.get();
 
