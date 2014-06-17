@@ -93,18 +93,80 @@ struct ComputeQuality : Compute {
 
 ClusterData* SPKMeansGalois::runSPKMeans()
 {
-    // apply txn stream
-    // initial clusters
+    // keep track of the run time of this algorithm
+    Galois::Timer timer;
+    timer.start();
 
+    // apply the TXN scheme on the document vectors (normalize them)
+    txnScheme();
+
+    // initialize the data arrays
     ClusterData *data = new ClusterData(k, dc, wc);
 
+    // choose an initial partitioning, and get concepts and quality
+    float quality = initPartitions(data);
+
+    // initialize the Galois computational components
     ComputePartitions cP(data);
     ComputeConcepts cC(data);
     ComputeQuality cQ(data);
 
-    // init graph
+    // TODO - init graph; how?
     Graph g;
     //g.add(???);
 
+    // keep track of all individual component times for analysis
+    Galois::Timer ptimer;
+    Galois::Timer ctimer;
+    Galois::Timer qtimer;
+    float p_time = 0;
+    float c_time = 0;
+    float q_time = 0;
+
+    // do spherical k-means loop
+    float dQ = Q_THRESHOLD * 10;
+    int iterations = 0;
+    while(dQ > Q_THRESHOLD) {
+        iterations++;
+
+        // TODO - better to do 3 steps, or all at the same time with Galois?
+
+        ptimer.start();
+        /* TODO
+        Galois::for_each(g.begin(), g.begin() + dc,
+                         cP(),
+                         Galois::loopname("Compute New Partitions"));
+        */
+        ptimer.stop();
+        p_time += ptimer.get();
+
+        ctimer.start();
+        /* TODO
+        Galois::for_each(g.begin(), g.begin() + dc,
+                         cC(),
+                         Galois::loopname("Compute Concept Vectors"));
+        */
+        ctimer.stop();
+        c_time += ctimer.get();
+
+        qtimer.start();
+        /* TODO
+        Galois::for_each(g.begin(), g.begin() + dc,
+                         cQ(),
+                         Galois::loopname("Compute Quality"));
+        */
+        qtimer.stop();
+        q_time += qtimer.get();
+
+        // TODO
+        dQ = 0;
+        cout << "Quality: " << quality << " (+" << dQ << ")" << endl;
+    }
+
+    // report runtime statistics
+    timer.stop();
+    reportTime(0, timer.get());
+
+    // return the resulting partitions and concepts in the ClusterData struct
     return data;
 }

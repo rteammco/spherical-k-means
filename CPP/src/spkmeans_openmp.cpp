@@ -152,22 +152,7 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
 
     // report runtime statistics
     timer.stop();
-    float time_in_ms = timer.get();
-    cout << "Done in " << time_in_ms / 1000
-         << " seconds after " << iterations << " iterations." << endl;
-    float total = p_time + c_time + q_time;
-    if(total == 0)
-        cout << "No time stats available: program finished too fast." << endl;
-    else {
-        cout << "Timers (ms): " << endl
-             << "   partition [" << p_time << "] ("
-                << (p_time/total)*100 << "%)" << endl
-             << "   concepts [" << c_time << "] ("
-                << (c_time/total)*100 << "%)" << endl
-             << "   quality [" << q_time << "] ("
-                << (q_time/total)*100 << "%)" << endl;
-    }
-
+    reportTime(iterations, timer.get(), p_time, c_time, q_time);
 
     // return the resulting partitions and concepts in the ClusterData struct
     return data;
