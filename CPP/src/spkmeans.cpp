@@ -207,6 +207,7 @@ ClusterData* SPKMeans::runSPKMeans()
     float c_time = 0;
     float q_time = 0;
 
+    // keep track of which partitions were changed, and cosine similarities
     bool changed[k];
     for(int i=0; i<k; i++)
         changed[i] = true;
@@ -259,6 +260,36 @@ ClusterData* SPKMeans::runSPKMeans()
             }
             else
                 changed[i] = true;
+        }
+
+        // check 2 (test)
+        // TODO - seems like the first one works just fine
+        for(int i=0; i<k; i++) {
+            if(p_sizes[i] == new_partitions[i].size()) {
+                //changed[i] = false;
+                // for each vector in the old partition, check if it exists
+                //  in the new partition
+                for(int a=0; a<p_sizes[i]; a++) {
+                    bool match = false;
+                    for(int b=0; b<p_sizes[i]; b++) {
+                        // if the vector in old partition is found in the new
+                        //  partition, we have a match.
+                        if(partitions[i][a] == new_partitions[i][b]) {
+                            match = true;
+                            break;
+                        }
+                    }
+                    // if no match was found, that this partition has changed
+                    if(!match) {
+                        if(changed[i] == false)
+                            cout << "FAILED" << endl;
+                        //changed[i] = true;
+                        break;
+                    }
+                }
+            }
+            //else
+            //    changed[i] = true;
         }
 
         // transfer the new partitions to the partitions array
