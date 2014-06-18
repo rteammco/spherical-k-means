@@ -259,7 +259,7 @@ ClusterData* SPKMeans::runSPKMeans()
             if(changed[0] || !optimize)
                 cValues[i*k] = cosineSimilarity(concepts[0], i);
             for(int j=1; j<k; j++) {
-               if(changed[j] || !optimize) // again, only if changed
+                if(changed[j] || !optimize) // again, only if changed
                     cValues[i*k + j] = cosineSimilarity(concepts[j], i);
                 if(cValues[i*k + j] > cValues[i*k + cIndx])
                     cIndx = j;
@@ -285,7 +285,7 @@ ClusterData* SPKMeans::runSPKMeans()
         }
         // check 2 (test)
         // TODO - seems like the first one works just fine, can we prove it?
-        for(int i=0; i<k; i++) {
+        /*for(int i=0; i<k; i++) {
             if(p_sizes[i] == new_partitions[i].size()) {
                 // for each vector in the old partition, check if it exists
                 //  in the new partition
@@ -307,7 +307,7 @@ ClusterData* SPKMeans::runSPKMeans()
                     }
                 }
             }
-        }
+        }*/
 
         // transfer the new partitions to the partitions array
         data->clearPartitions();
@@ -319,8 +319,7 @@ ClusterData* SPKMeans::runSPKMeans()
         // compute new concept vectors
         ctimer.start();
         for(int i=0; i<k; i++) {
-            // only update concept vectors if partition has changed or if
-            // optimization is disabled
+            // only update concept vectors if partition has changed
             if(changed[i] || !optimize) {
                 delete[] concepts[i];
                 concepts[i] = computeConcept(partitions[i], p_sizes[i]);

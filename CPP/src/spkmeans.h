@@ -41,7 +41,7 @@ class SPKMeans {
 
     // quality computation functions
     float computeQ(float **partition, int p_size, float *concept);
-    virtual float computeQ(float ***partitions, int *p_sizes, float **concepts);
+    float computeQ(float ***partitions, int *p_sizes, float **concepts);
     float computeQ(float ***partitions, int *p_sizes, float **concepts,
                    bool *changed, float *qualities);
 
@@ -69,7 +69,7 @@ class SPKMeans {
 class SPKMeansOpenMP : public SPKMeans {
   private:
     unsigned int num_threads;
-    float computeQ(float ***partitions, int *p_sizes, float **concepts);
+    //float computeQ(float ***partitions, int *p_sizes, float **concepts);
 
   public:
     // constructor: set the number of threads

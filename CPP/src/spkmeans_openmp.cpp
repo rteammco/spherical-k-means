@@ -6,6 +6,7 @@
 
 #include "spkmeans.h"
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <mutex>
@@ -46,7 +47,7 @@ unsigned int SPKMeansOpenMP::getNumThreads()
 
 
 // Overridden for parallelizing:
-float SPKMeansOpenMP::computeQ(
+/*float SPKMeansOpenMP::computeQ(
     float ***partitions, int *p_sizes, float **concepts)
 {
     float quality = 0;
@@ -59,7 +60,7 @@ float SPKMeansOpenMP::computeQ(
       //  mut.unlock();
     }
     return quality;
-}
+}*/
 
 
 // Runs the spherical k-means algorithm on the given sparse matrix D and
@@ -79,10 +80,8 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     int *p_sizes = data->p_sizes;
     float **concepts = data->concepts;
 
-    // compute initial quality of the partitions
+    // choose an initial partitioning, and get first concepts
     initPartitions(data);
-    float quality = computeQ(partitions, p_sizes, concepts);
-    cout << "Initial quality: " << quality << endl;
 
     // keep track of all individual component times for analysis
     Galois::Timer ptimer;
@@ -92,6 +91,19 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     float c_time = 0;
     float q_time = 0;
 
+    // keep track of which partitions were changed, the cosine similarities
+    // between all docs and clusters, and the qualities of each cluster.
+    bool changed[k];
+    for(int i=0; i<k; i++)
+        changed[i] = true;
+    float cValues[k*dc];
+    float qualities[k];
+
+    // compute initial quality, and cache the quality values
+    float quality = computeQ(partitions, p_sizes, concepts,
+                             changed, qualities);
+    cout << "Initial quality: " << quality << endl;
+
     // do spherical k-means loop
     float dQ = Q_THRESHOLD * 10;
     int iterations = 0;
@@ -99,13 +111,44 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     while(dQ > Q_THRESHOLD) {
         iterations++;
 
+        // TEMP debug message
+        int num_same = 0;
+        for (int i=0; i<k; i++)
+            if(!changed[i])
+                num_same++;
+        cout << num_same << " partitions are the same." << endl;
+
         // compute new partitions based on old concept vectors
         ptimer.start();
+        // TODO - new_partitions isn't deleted (memory leak?)
         vector<float*> *new_partitions = new vector<float*>[k];
         #pragma omp parallel for
         for(int i=0; i<k; i++)
             new_partitions[i] = vector<float*>();
+
+        // ---------- ISSUE STARTS HERE ---------- //
         #pragma omp parallel for
+        for(int i=0; i<dc; i++) {
+            int cIndx = 0;
+            // only update cosine similarities if partitions have changed
+            // or if optimization is disabled
+            if(changed[0] || !optimize)
+                cValues[i*k] = cosineSimilarity(concepts[0], i);
+            for(int j=1; j<k; j++) {
+                if(changed[j] || !optimize) // again, only if changed
+                    cValues[i*k + j] = cosineSimilarity(concepts[j], i);
+                if(cValues[i*k + j] > cValues[i*k + cIndx])
+                    cIndx = j;
+            }
+            mut.lock();
+            new_partitions[cIndx].push_back(doc_matrix[i]);
+            mut.unlock();
+        }
+        // ---------- ISSUE  ENDS  HERE ---------- //
+/*        vector<float*> *new_partitions2 = new vector<float*>[k];
+        #pragma omp parallel for
+        for(int i=0; i<k; i++)
+            new_partitions2[i] = vector<float*>();
         for(int i=0; i<dc; i++) {
             int cIndx = 0;
             float cVal = cosineSimilarity(concepts[0], i);
@@ -116,12 +159,66 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
                     cIndx = j;
                 }
             }
-            mut.lock();
-            new_partitions[cIndx].push_back(doc_matrix[i]);
-            mut.unlock();
+            new_partitions2[cIndx].push_back(doc_matrix[i]);
         }
+
+        // TODO remove
+        for(int i=0; i<k; i++) {
+            int sz1 = new_partitions[i].size();
+//            cout << "|Part" << i << "| = " << sz1 << endl;
+            bool match = false;
+            for(int x=0; x<k; x++) {
+                int sz2 = new_partitions2[x].size();
+                int num = 0;
+                if(sz1 == sz2) {
+                    for(int a=0; a < sz1; a++) {
+                        bool foundit = false;
+                        for(int b=0; b < sz2; b++) {
+                            if(new_partitions[i][a] == new_partitions2[x][b]) {
+                                foundit = true;
+                                break;
+                            }
+                        }
+                        if(foundit)
+                            num++;
+                    }
+                }
+                if(num == sz1) {
+                    match = true;
+                    break;
+                }
+//                cout << "Got " << num << " matches with p" << x
+//                     << ", sz2=" << sz2 << endl;
+            }
+            if(!match)
+                cout << ">>>>>>>>>>     FAILED." << endl;
+        }
+*/
         ptimer.stop();
         p_time += ptimer.get();
+
+        // check if partitions changed since last time
+        for(int i=0; i<k; i++) {
+            // for each partition, check if new and old are same size
+            if(p_sizes[i] == new_partitions[i].size()) {
+                changed[i] = false;
+                // for each document in old partition
+                for(int j=0; j<p_sizes[i]; j++) {
+                    // check if document is in new partition (we need std::find
+                    // here because order is not guaranteed due to the
+                    // parallelization.
+                    if(find(new_partitions[i].begin(),
+                            new_partitions[i].end(),
+                            partitions[i][j]) == new_partitions[i].end())
+                    {
+                        changed[i] = true;
+                        break;
+                    }
+                }
+            }
+            else
+                changed[i] = true;
+        }
 
         // transfer the new partitions to the partitions array
         data->clearPartitions();
@@ -132,16 +229,26 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
 
         // compute new concept vectors
         ctimer.start();
-        data->clearConcepts();
         #pragma omp parallel for
+        for(int i=0; i<k; i++) {
+            // only update concept vectors if partition has changed
+            if(changed[i] || !optimize) {
+                delete[] concepts[i];
+                concepts[i] = computeConcept(partitions[i], p_sizes[i]);
+            }
+        }
+        /*#pragma omp parallel for
+        data->clearConcepts();
         for(int i=0; i<k; i++)
-            concepts[i] = computeConcept(partitions[i], p_sizes[i]);
+            concepts[i] = computeConcept(partitions[i], p_sizes[i]);*/
         ctimer.stop();
         c_time += ctimer.get();
 
         // compute quality of new partitioning
         qtimer.start();
-        float n_quality = computeQ(partitions, p_sizes, concepts);
+        float n_quality = computeQ(partitions, p_sizes, concepts,
+                                   changed, qualities);
+        //float n_quality = computeQ(partitions, p_sizes, concepts);
         dQ = n_quality - quality;
         quality = n_quality;
         qtimer.stop();
