@@ -111,13 +111,6 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     while(dQ > Q_THRESHOLD) {
         iterations++;
 
-        // TEMP debug message
-        int num_same = 0;
-        for (int i=0; i<k; i++)
-            if(!changed[i])
-                num_same++;
-        cout << num_same << " partitions are the same." << endl;
-
         // compute new partitions based on old concept vectors
         ptimer.start();
         // TODO - new_partitions isn't deleted (memory leak?)
@@ -125,8 +118,6 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
         #pragma omp parallel for
         for(int i=0; i<k; i++)
             new_partitions[i] = vector<float*>();
-
-        // ---------- ISSUE STARTS HERE ---------- //
         #pragma omp parallel for
         for(int i=0; i<dc; i++) {
             int cIndx = 0;
@@ -144,56 +135,6 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
             new_partitions[cIndx].push_back(doc_matrix[i]);
             mut.unlock();
         }
-        // ---------- ISSUE  ENDS  HERE ---------- //
-/*        vector<float*> *new_partitions2 = new vector<float*>[k];
-        #pragma omp parallel for
-        for(int i=0; i<k; i++)
-            new_partitions2[i] = vector<float*>();
-        for(int i=0; i<dc; i++) {
-            int cIndx = 0;
-            float cVal = cosineSimilarity(concepts[0], i);
-            for(int j=1; j<k; j++) {
-                float new_cVal = cosineSimilarity(concepts[j], i);
-                if(new_cVal > cVal) {
-                    cVal = new_cVal;
-                    cIndx = j;
-                }
-            }
-            new_partitions2[cIndx].push_back(doc_matrix[i]);
-        }
-
-        // TODO remove
-        for(int i=0; i<k; i++) {
-            int sz1 = new_partitions[i].size();
-//            cout << "|Part" << i << "| = " << sz1 << endl;
-            bool match = false;
-            for(int x=0; x<k; x++) {
-                int sz2 = new_partitions2[x].size();
-                int num = 0;
-                if(sz1 == sz2) {
-                    for(int a=0; a < sz1; a++) {
-                        bool foundit = false;
-                        for(int b=0; b < sz2; b++) {
-                            if(new_partitions[i][a] == new_partitions2[x][b]) {
-                                foundit = true;
-                                break;
-                            }
-                        }
-                        if(foundit)
-                            num++;
-                    }
-                }
-                if(num == sz1) {
-                    match = true;
-                    break;
-                }
-//                cout << "Got " << num << " matches with p" << x
-//                     << ", sz2=" << sz2 << endl;
-            }
-            if(!match)
-                cout << ">>>>>>>>>>     FAILED." << endl;
-        }
-*/
         ptimer.stop();
         p_time += ptimer.get();
 
@@ -237,10 +178,6 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
                 concepts[i] = computeConcept(partitions[i], p_sizes[i]);
             }
         }
-        /*#pragma omp parallel for
-        data->clearConcepts();
-        for(int i=0; i<k; i++)
-            concepts[i] = computeConcept(partitions[i], p_sizes[i]);*/
         ctimer.stop();
         c_time += ctimer.get();
 
@@ -248,13 +185,18 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
         qtimer.start();
         float n_quality = computeQ(partitions, p_sizes, concepts,
                                    changed, qualities);
-        //float n_quality = computeQ(partitions, p_sizes, concepts);
         dQ = n_quality - quality;
         quality = n_quality;
         qtimer.stop();
         q_time += qtimer.get();
 
-        cout << "Quality: " << quality << " (+" << dQ << ")" << endl;
+        cout << "Quality: " << quality << " (+" << dQ << ")";// << endl;
+        // TODO - TEMP debug message
+        int num_same = 0;
+        for (int i=0; i<k; i++)
+            if(!changed[i])
+                num_same++;
+        cout << " --- " << num_same << " partitions are the same." << endl;
     }
 
 

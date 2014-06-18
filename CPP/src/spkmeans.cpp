@@ -239,13 +239,6 @@ ClusterData* SPKMeans::runSPKMeans()
     while(dQ > Q_THRESHOLD) {
         iterations++;
 
-        // TEMP debug message
-        int num_same = 0;
-        for (int i=0; i<k; i++)
-            if(!changed[i])
-                num_same++;
-        cout << num_same << " partitions are the same." << endl;
-
         // compute new partitions based on old concept vectors
         ptimer.start();
         // TODO - new_partitions isn't deleted (memory leak?)
@@ -337,7 +330,13 @@ ClusterData* SPKMeans::runSPKMeans()
         qtimer.stop();
         q_time += qtimer.get();
 
-        cout << "Quality: " << quality << " (+" << dQ << ")" << endl;
+        cout << "Quality: " << quality << " (+" << dQ << ")";// << endl;
+        // TODO - TEMP debug message
+        int num_same = 0;
+        for (int i=0; i<k; i++)
+            if(!changed[i])
+                num_same++;
+        cout << " --- " << num_same << " partitions are the same." << endl;
     }
 
 
