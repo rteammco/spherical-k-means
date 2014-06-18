@@ -92,7 +92,7 @@ void SPKMeans::txnScheme()
 
 // Initializes the first partition (randomly or otherwise assigned) to provide
 // a starting point for the clustering algorithm.
-float SPKMeans::initPartitions(ClusterData *data)
+void SPKMeans::initPartitions(ClusterData *data)
 {
     // create the first arbitrary partitioning
     int split = floor(dc / k);
@@ -119,9 +119,6 @@ float SPKMeans::initPartitions(ClusterData *data)
         data->concepts[i] =
             computeConcept(data->partitions[i], data->p_sizes[i]);
     }
-
-    // compute initial quality of the partitions
-    return computeQ(data->partitions, data->p_sizes, data->concepts);
 }
 
 
@@ -145,6 +142,22 @@ float SPKMeans::computeQ(float ***partitions, int *p_sizes, float **concepts)
     float quality = 0;
     for(int i=0; i<k; i++)
         quality += computeQ(partitions[i], p_sizes[i], concepts[i]);
+    return quality;
+}
+
+
+
+// Same as computeQ, but uses cached quality values to avoid recomputing
+// qualities of unchanged partitions.
+float SPKMeans::computeQ(float ***partitions, int *p_sizes, float **concepts,
+                         bool *changed, float *qualities)
+{
+    float quality = 0;
+    for(int i=0; i<k; i++) {
+        if(changed[i])
+            qualities[i] = computeQ(partitions[i], p_sizes[i], concepts[i]);
+        quality += qualities[i];
+    }
     return quality;
 }
 
@@ -195,9 +208,8 @@ ClusterData* SPKMeans::runSPKMeans()
     int *p_sizes = data->p_sizes;
     float **concepts = data->concepts;
 
-    // choose an initial partitioning, and get concepts and quality
-    float quality = initPartitions(data);
-    cout << "Initial quality: " << quality << endl;
+    // choose an initial partitioning, and get first concepts
+    initPartitions(data);
 
     // keep track of all individual component times for analysis
     Galois::Timer ptimer;
@@ -207,11 +219,18 @@ ClusterData* SPKMeans::runSPKMeans()
     float c_time = 0;
     float q_time = 0;
 
-    // keep track of which partitions were changed, and cosine similarities
+    // keep track of which partitions were changed, the cosine similarities
+    // between all docs and clusters, and the qualities of each cluster.
     bool changed[k];
     for(int i=0; i<k; i++)
         changed[i] = true;
     float cValues[k*dc];
+    float qualities[k];
+
+    // compute initial quality, and cache the quality values
+    float quality = computeQ(partitions, p_sizes, concepts,
+                             changed, qualities);
+    cout << "Initial quality: " << quality << endl;
 
     // do spherical k-means loop
     float dQ = Q_THRESHOLD * 10;
@@ -219,6 +238,7 @@ ClusterData* SPKMeans::runSPKMeans()
     while(dQ > Q_THRESHOLD) {
         iterations++;
 
+        // TEMP debug message
         int num_same = 0;
         for (int i=0; i<k; i++)
             if(!changed[i])
@@ -237,7 +257,7 @@ ClusterData* SPKMeans::runSPKMeans()
             if(changed[0])
                 cValues[i*k] = cosineSimilarity(concepts[0], i);
             for(int j=1; j<k; j++) {
-                if(changed[j])
+               if(changed[j]) // again, only update if partition changed
                     cValues[i*k + j] = cosineSimilarity(concepts[j], i);
                 if(cValues[i*k + j] > cValues[i*k + cIndx])
                     cIndx = j;
@@ -261,9 +281,8 @@ ClusterData* SPKMeans::runSPKMeans()
             else
                 changed[i] = true;
         }
-
         // check 2 (test)
-        // TODO - seems like the first one works just fine
+        // TODO - seems like the first one works just fine, can we prove it?
         for(int i=0; i<k; i++) {
             if(p_sizes[i] == new_partitions[i].size()) {
                 //changed[i] = false;
@@ -283,13 +302,10 @@ ClusterData* SPKMeans::runSPKMeans()
                     if(!match) {
                         if(changed[i] == false)
                             cout << "FAILED" << endl;
-                        //changed[i] = true;
                         break;
                     }
                 }
             }
-            //else
-            //    changed[i] = true;
         }
 
         // transfer the new partitions to the partitions array
@@ -301,7 +317,6 @@ ClusterData* SPKMeans::runSPKMeans()
 
         // compute new concept vectors
         ctimer.start();
-        //data->clearConcepts();
         for(int i=0; i<k; i++) {
             // only update concept vectors if partition has changed
             if(changed[i]) {
@@ -314,7 +329,8 @@ ClusterData* SPKMeans::runSPKMeans()
 
         // compute quality of new partitioning
         qtimer.start();
-        float n_quality = computeQ(partitions, p_sizes, concepts);
+        float n_quality = computeQ(partitions, p_sizes, concepts,
+                                   changed, qualities);
         dQ = n_quality - quality;
         quality = n_quality;
         qtimer.stop();

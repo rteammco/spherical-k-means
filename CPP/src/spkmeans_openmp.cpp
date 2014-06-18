@@ -80,7 +80,8 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     float **concepts = data->concepts;
 
     // compute initial quality of the partitions
-    float quality = initPartitions(data);
+    initPartitions(data);
+    float quality = computeQ(partitions, p_sizes, concepts);
     cout << "Initial quality: " << quality << endl;
 
     // keep track of all individual component times for analysis

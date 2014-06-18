@@ -37,11 +37,13 @@ class SPKMeans {
     void txnScheme();
 
     // initial partition setup
-    float initPartitions(ClusterData *data);
+    void initPartitions(ClusterData *data);
 
     // quality computation functions
     float computeQ(float **partition, int p_size, float *concept);
     virtual float computeQ(float ***partitions, int *p_sizes, float **concepts);
+    float computeQ(float ***partitions, int *p_sizes, float **concepts,
+                   bool *changed, float *qualities);
 
     // spkmeans algorithm computation function
     float cosineSimilarity(float *cv, int doc_index);

@@ -104,7 +104,8 @@ ClusterData* SPKMeansGalois::runSPKMeans()
     ClusterData *data = new ClusterData(k, dc, wc);
 
     // choose an initial partitioning, and get concepts and quality
-    float quality = initPartitions(data);
+    initPartitions(data);
+    float quality = computeQ(data->partitions, data->p_sizes, data->concepts);
 
     // initialize the Galois computational components
     ComputePartitions cP(data);
