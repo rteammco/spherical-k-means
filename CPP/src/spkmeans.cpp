@@ -152,6 +152,8 @@ float SPKMeans::computeQ(float ***partitions, int *p_sizes, float **concepts)
 float SPKMeans::computeQ(float ***partitions, int *p_sizes, float **concepts,
                          bool *changed, float *qualities)
 {
+    if(!optimize) // if optimization is off, don't use caching.
+        return computeQ(partitions, p_sizes, concepts);
     float quality = 0;
     for(int i=0; i<k; i++) {
         if(changed[i])
@@ -164,10 +166,9 @@ float SPKMeans::computeQ(float ***partitions, int *p_sizes, float **concepts,
 
 
 // Computes the cosine similarity value of the two given vectors (dv and cv).
-// TODO - we can cache the norms of all of the document vectors
 float SPKMeans::cosineSimilarity(float *cv, int doc_index)
 {
-    if(!optimize) {
+    if(!optimize) { // if optimization is off, don't use caching
         return vec_dot(doc_matrix[doc_index], cv, wc) /
             (vec_norm(doc_matrix[doc_index], wc) * vec_norm(cv, wc));
     }
@@ -254,10 +255,11 @@ ClusterData* SPKMeans::runSPKMeans()
         for(int i=0; i<dc; i++) {
             int cIndx = 0;
             // only update cosine similarities if partitions have changed
-            if(changed[0])
+            // or if optimization is disabled
+            if(changed[0] || !optimize)
                 cValues[i*k] = cosineSimilarity(concepts[0], i);
             for(int j=1; j<k; j++) {
-               if(changed[j]) // again, only update if partition changed
+               if(changed[j] || !optimize) // again, only if changed
                     cValues[i*k + j] = cosineSimilarity(concepts[j], i);
                 if(cValues[i*k + j] > cValues[i*k + cIndx])
                     cIndx = j;
@@ -285,7 +287,6 @@ ClusterData* SPKMeans::runSPKMeans()
         // TODO - seems like the first one works just fine, can we prove it?
         for(int i=0; i<k; i++) {
             if(p_sizes[i] == new_partitions[i].size()) {
-                //changed[i] = false;
                 // for each vector in the old partition, check if it exists
                 //  in the new partition
                 for(int a=0; a<p_sizes[i]; a++) {
@@ -318,8 +319,9 @@ ClusterData* SPKMeans::runSPKMeans()
         // compute new concept vectors
         ctimer.start();
         for(int i=0; i<k; i++) {
-            // only update concept vectors if partition has changed
-            if(changed[i]) {
+            // only update concept vectors if partition has changed or if
+            // optimization is disabled
+            if(changed[i] || !optimize) {
                 delete[] concepts[i];
                 concepts[i] = computeConcept(partitions[i], p_sizes[i]);
             }
