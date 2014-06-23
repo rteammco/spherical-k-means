@@ -1,8 +1,13 @@
 /* File: spkmeans_galois.cpp
+ *
+ * Defines the Galois version of the SKPMeans class. This version directly
+ * uses the Galois parallel library for multithreaded computation to speed
+ * up the algorithm's runtime on multicore systems.
  */
 
 #include "spkmeans.h"
 
+#include <functional>
 #include <iostream>
 
 #include "Galois/Galois.h"
@@ -102,17 +107,15 @@ struct ComputePartitions {
     bool optimize;
     ClusterData *data;
 
+    // just generate the new partitions locally, and swap memory after
     vector<float*> *new_partitions; // TODO - Galois structure???
 
-    // pointer to the cosineSimilarity function
-    float (*cosineSimilarity) (float *cv, int doc_index);
+    // binding for the cosineSimilarity function in the SPKMeans object
+    function<float(float*, int)> cosineSimilarity;
 
-
-    // TODO - fix
-    ComputePartitions(ClusterData *data_,
-                      float (*cS_ptr) (float *cv, int doc_index),
-                      bool optimize_)
-        : data(data_), cosineSimilarity(cS_ptr), optimize(optimize_) {}
+    // constructor: links all of the components to the struct
+    ComputePartitions(ClusterData *data_, bool optimize_)
+        : data(data_), optimize(optimize_) {}
 
 
     // Compute the new partitions:
@@ -138,6 +141,7 @@ struct ComputePartitions {
 };
 
 
+// Run the spherical K-means algorithm using the Galois library.
 ClusterData* SPKMeansGalois::runSPKMeans()
 {
     // keep track of the run time of this algorithm
@@ -146,6 +150,17 @@ ClusterData* SPKMeansGalois::runSPKMeans()
 
     // apply the TXN scheme on the document vectors (normalize them)
     txnScheme();
+
+    // initialize the data arrays
+    ClusterData *data = new ClusterData(k, dc, wc);
+
+    // create the Galois computation structs
+    ComputePartitions cP(data, optimize);
+    // bind the cosine similarity function from SPKMeans to the struct
+    cP.cosineSimilarity = bind(&SPKMeans::cosineSimilarity,
+                               this, // use this object's instance variables
+                               placeholders::_1, placeholders::_2);
+    
 
     // convert data to Galois format
     Galois::LargeArray<float*> docs;

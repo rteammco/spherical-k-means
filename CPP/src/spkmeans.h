@@ -44,7 +44,6 @@ class SPKMeans {
     float computeQ(ClusterData *data);
 
     // spkmeans algorithm computation function
-    float cosineSimilarity(float *cv, int doc_index);
     float* computeConcept(float **partition, int p_size);
 
   public:
@@ -56,6 +55,10 @@ class SPKMeans {
     // switches for optimization
     void disableOptimization();
     void enableOptimization();
+
+    // cosine similarity compute function: made public for use by Galois
+    // computation structs
+    float cosineSimilarity(float *cv, int doc_index);
 
     // the algorithm is implemented differently by each type of paradigm
     virtual ClusterData* runSPKMeans();
