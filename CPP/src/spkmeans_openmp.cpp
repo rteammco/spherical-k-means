@@ -100,8 +100,7 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     float qualities[k];
 
     // compute initial quality, and cache the quality values
-    float quality = computeQ(partitions, p_sizes, concepts,
-                             changed, qualities);
+    float quality = computeQ(data);
     cout << "Initial quality: " << quality << endl;
 
     // do spherical k-means loop
@@ -183,8 +182,7 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
 
         // compute quality of new partitioning
         qtimer.start();
-        float n_quality = computeQ(partitions, p_sizes, concepts,
-                                   changed, qualities);
+        float n_quality = computeQ(data);
         dQ = n_quality - quality;
         quality = n_quality;
         qtimer.stop();

@@ -138,29 +138,18 @@ float SPKMeans::computeQ(float **partition, int p_size, float *concept)
 
 
 // Returns the total quality of all partitions by summing the qualities of
-// each individual partition.
-float SPKMeans::computeQ(float ***partitions, int *p_sizes, float **concepts)
+// each individual partition. If optimization is enabled, uses cached values
+// whenever possible.
+float SPKMeans::computeQ(ClusterData *data)
 {
-    float quality = 0;
-    for(int i=0; i<k; i++)
-        quality += computeQ(partitions[i], p_sizes[i], concepts[i]);
-    return quality;
-}
-
-
-
-// Same as computeQ, but uses cached quality values to avoid recomputing
-// qualities of unchanged partitions.
-float SPKMeans::computeQ(float ***partitions, int *p_sizes, float **concepts,
-                         bool *changed, float *qualities)
-{
-    if(!optimize) // if optimization is off, don't use caching.
-        return computeQ(partitions, p_sizes, concepts);
     float quality = 0;
     for(int i=0; i<k; i++) {
-        if(changed[i])
-            qualities[i] = computeQ(partitions[i], p_sizes[i], concepts[i]);
-        quality += qualities[i];
+        if(data->changed[i]) {
+            data->qualities[i] = computeQ(data->partitions[i],
+                                          data->p_sizes[i],
+                                          data->concepts[i]);
+        }
+        quality += data->qualities[i];
     }
     return quality;
 }
@@ -226,8 +215,7 @@ ClusterData* SPKMeans::runSPKMeans()
     float q_time = 0;
 
     // compute initial quality, and cache the quality values
-    float quality = computeQ(partitions, p_sizes, concepts,
-                             changed, qualities);
+    float quality = computeQ(data);
     cout << "Initial quality: " << quality << endl;
 
     // do spherical k-means loop
@@ -320,8 +308,7 @@ ClusterData* SPKMeans::runSPKMeans()
 
         // compute quality of new partitioning
         qtimer.start();
-        float n_quality = computeQ(partitions, p_sizes, concepts,
-                                   changed, qualities);
+        float n_quality = computeQ(data);
         dQ = n_quality - quality;
         quality = n_quality;
         qtimer.stop();

@@ -41,9 +41,7 @@ class SPKMeans {
 
     // quality computation functions
     float computeQ(float **partition, int p_size, float *concept);
-    float computeQ(float ***partitions, int *p_sizes, float **concepts);
-    float computeQ(float ***partitions, int *p_sizes, float **concepts,
-                   bool *changed, float *qualities);
+    float computeQ(ClusterData *data);
 
     // spkmeans algorithm computation function
     float cosineSimilarity(float *cv, int doc_index);
