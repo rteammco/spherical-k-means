@@ -234,10 +234,10 @@ ClusterData* SPKMeans::runSPKMeans()
             int cIndx = 0;
             // only update cosine similarities if partitions have changed
             // or if optimization is disabled
-            if(changed[0] || !optimize)
+            if(changed[0])
                 cValues[i*k] = cosineSimilarity(concepts[0], i);
             for(int j=1; j<k; j++) {
-                if(changed[j] || !optimize) // again, only if changed
+                if(changed[j]) // again, only if changed
                     cValues[i*k + j] = cosineSimilarity(concepts[j], i);
                 if(cValues[i*k + j] > cValues[i*k + cIndx])
                     cIndx = j;
@@ -247,19 +247,21 @@ ClusterData* SPKMeans::runSPKMeans()
         ptimer.stop();
         p_time += ptimer.get();
 
-        // check if partitions changed since last time
-        for(int i=0; i<k; i++) {
-            if(p_sizes[i] == new_partitions[i].size()) {
-                changed[i] = false;
-                for(int j=0; j<p_sizes[i]; j++) {
-                    if(partitions[i][j] != new_partitions[i][j]) {
-                        changed[i] = true;
-                        break;
+        // check if partitions changed since last time (skip if not optimizing)
+        if(optimize) {
+            for(int i=0; i<k; i++) {
+                if(p_sizes[i] == new_partitions[i].size()) {
+                    changed[i] = false;
+                    for(int j=0; j<p_sizes[i]; j++) {
+                        if(partitions[i][j] != new_partitions[i][j]) {
+                            changed[i] = true;
+                            break;
+                        }
                     }
                 }
+                else
+                    changed[i] = true;
             }
-            else
-                changed[i] = true;
         }
         // check 2 (test)
         // TODO - seems like the first one works just fine, can we prove it?
@@ -298,7 +300,7 @@ ClusterData* SPKMeans::runSPKMeans()
         ctimer.start();
         for(int i=0; i<k; i++) {
             // only update concept vectors if partition has changed
-            if(changed[i] || !optimize) {
+            if(changed[i]) {
                 delete[] concepts[i];
                 concepts[i] = computeConcept(partitions[i], p_sizes[i]);
             }
@@ -314,13 +316,17 @@ ClusterData* SPKMeans::runSPKMeans()
         qtimer.stop();
         q_time += qtimer.get();
 
-        cout << "Quality: " << quality << " (+" << dQ << ")";// << endl;
-        // TODO - TEMP debug message
-        int num_same = 0;
-        for (int i=0; i<k; i++)
-            if(!changed[i])
-                num_same++;
-        cout << " --- " << num_same << " partitions are the same." << endl;
+        // report quality and (if optimizing) how many partitions changed
+        cout << "Quality: " << quality << " (+" << dQ << ")";
+        if(optimize) {
+            int num_same = 0;
+            for (int i=0; i<k; i++)
+                if(!changed[i])
+                    num_same++;
+            cout << " --- " << num_same << " partitions are the same." << endl;
+        }
+        else
+            cout << " --- optimization disabled." << endl;
     }
 
 

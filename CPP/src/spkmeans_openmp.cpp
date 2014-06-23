@@ -121,11 +121,10 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
         for(int i=0; i<dc; i++) {
             int cIndx = 0;
             // only update cosine similarities if partitions have changed
-            // or if optimization is disabled
-            if(changed[0] || !optimize)
+            if(changed[0])
                 cValues[i*k] = cosineSimilarity(concepts[0], i);
             for(int j=1; j<k; j++) {
-                if(changed[j] || !optimize) // again, only if changed
+                if(changed[j]) // again, only if changed
                     cValues[i*k + j] = cosineSimilarity(concepts[j], i);
                 if(cValues[i*k + j] > cValues[i*k + cIndx])
                     cIndx = j;
@@ -137,27 +136,29 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
         ptimer.stop();
         p_time += ptimer.get();
 
-        // check if partitions changed since last time
-        for(int i=0; i<k; i++) {
-            // for each partition, check if new and old are same size
-            if(p_sizes[i] == new_partitions[i].size()) {
-                changed[i] = false;
-                // for each document in old partition
-                for(int j=0; j<p_sizes[i]; j++) {
-                    // check if document is in new partition (we need std::find
-                    // here because order is not guaranteed due to the
-                    // parallelization.
-                    if(find(new_partitions[i].begin(),
-                            new_partitions[i].end(),
-                            partitions[i][j]) == new_partitions[i].end())
-                    {
-                        changed[i] = true;
-                        break;
+        // check if partitions changed since last time (skip if not optimizing)
+        if(optimize) {
+            for(int i=0; i<k; i++) {
+                // for each partition, check if new and old are same size
+                if(p_sizes[i] == new_partitions[i].size()) {
+                    changed[i] = false;
+                    // for each document in old partition
+                    for(int j=0; j<p_sizes[i]; j++) {
+                        // check if document is in new partition (we need
+                        // std::find here because order is not guaranteed due
+                        // to the parallelization)
+                        if(find(new_partitions[i].begin(),
+                                new_partitions[i].end(),
+                                partitions[i][j]) == new_partitions[i].end())
+                        {
+                            changed[i] = true;
+                            break;
+                        }
                     }
                 }
+                else
+                    changed[i] = true;
             }
-            else
-                changed[i] = true;
         }
 
         // transfer the new partitions to the partitions array
@@ -172,7 +173,7 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
         #pragma omp parallel for
         for(int i=0; i<k; i++) {
             // only update concept vectors if partition has changed
-            if(changed[i] || !optimize) {
+            if(changed[i]) {
                 delete[] concepts[i];
                 concepts[i] = computeConcept(partitions[i], p_sizes[i]);
             }
@@ -188,13 +189,17 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
         qtimer.stop();
         q_time += qtimer.get();
 
-        cout << "Quality: " << quality << " (+" << dQ << ")";// << endl;
-        // TODO - TEMP debug message
-        int num_same = 0;
-        for (int i=0; i<k; i++)
-            if(!changed[i])
-                num_same++;
-        cout << " --- " << num_same << " partitions are the same." << endl;
+        // report quality and (if optimizing) how many partitions changed
+        cout << "Quality: " << quality << " (+" << dQ << ")";
+        if(optimize) {
+            int num_same = 0;
+            for (int i=0; i<k; i++)
+                if(!changed[i])
+                    num_same++;
+            cout << " --- " << num_same << " partitions are the same." << endl;
+        }
+        else
+            cout << " --- optimization disabled." << endl;
     }
 
 
