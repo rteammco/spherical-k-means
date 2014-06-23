@@ -23,12 +23,19 @@ struct ClusterData
     int *p_sizes;
     float **concepts;
 
+    // pointers to cosine similarities, qualities, and partition change flags
+    bool *changed;
+    float *cValues;
+    float *qualities;
+
 
     // Constructor: pass in the three required values (k, wc, dc), and set
-    // partition and concept vector pointers optionally. If pointers to the
-    // lists are not provided, new lists will be initialized instead.
+    // partition, concept vector, and change caching pointers optionally.
+    // If pointers to the lists are not provided, new lists will be
+    // initialized instead.
     ClusterData(int k_, int dc_, int wc_,
-            float ***ps_ = 0, int *psz_ = 0, float **cvs_ = 0)
+            float ***ps_ = 0, int *psz_ = 0, float **cvs_ = 0,
+            bool *changed_ = 0, float *cValues_ = 0, float *qualities_ = 0)
     {
         // set the variables (k, document count, word count)
         k = k_;
@@ -52,6 +59,27 @@ struct ClusterData
             concepts = new float*[k];
         else
             concepts = cvs_;
+
+        // set changed flag pointer; if newly created, initialize all to true
+        if(changed_ == 0) {
+            changed = new bool[k];
+            for(int i=0; i<k; i++)
+                changed[i] = true;
+        }
+        else
+            changed = changed_;
+
+        // set cosine similarity cache pointer
+        if(cValues_ == 0)
+            cValues = new float[k*dc];
+        else
+            cValues = cValues_;
+
+        // set partition qualities cache pointer
+        if(qualities_ == 0)
+            qualities = new float[k];
+        else
+            qualities = qualities_;
     }
 
 
@@ -84,6 +112,7 @@ struct ClusterData
     // clean up the partitions and concept vector pointers
     void clearMemory()
     {
+        // clean up partition, size, and concept vector arrays
         if(partitions != 0) {
             clearPartitions();
             delete[] partitions;
@@ -97,6 +126,20 @@ struct ClusterData
             clearConcepts();
             delete[] concepts;
             concepts = 0;
+        }
+
+        // clean up change cache arrays
+        if(changed != 0) {
+            delete[] changed;
+            changed = 0;
+        }
+        if(cValues != 0) {
+            delete[] cValues;
+            cValues = 0;
+        }
+        if(qualities != 0) {
+            delete[] qualities;
+            qualities = 0;
         }
     }
 

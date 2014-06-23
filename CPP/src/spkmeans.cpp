@@ -1,6 +1,8 @@
 /* File: spkmeans.cpp
  *
  * Defines the basic SPKMeans functions for the generic SPKMeans class.
+ * This class provides a single-threaded implementation of the algorithm,
+ * as well as some basic functions useful for the multithreaded versions.
  */
 
 #include "spkmeans.h"
@@ -208,6 +210,9 @@ ClusterData* SPKMeans::runSPKMeans()
     float ***partitions = data->partitions;
     int *p_sizes = data->p_sizes;
     float **concepts = data->concepts;
+    bool *changed = data->changed;
+    float *cValues = data->cValues;
+    float *qualities = data->qualities;
 
     // choose an initial partitioning, and get first concepts
     initPartitions(data);
@@ -219,14 +224,6 @@ ClusterData* SPKMeans::runSPKMeans()
     float p_time = 0;
     float c_time = 0;
     float q_time = 0;
-
-    // keep track of which partitions were changed, the cosine similarities
-    // between all docs and clusters, and the qualities of each cluster.
-    bool changed[k];
-    for(int i=0; i<k; i++)
-        changed[i] = true;
-    float cValues[k*dc];
-    float qualities[k];
 
     // compute initial quality, and cache the quality values
     float quality = computeQ(partitions, p_sizes, concepts,

@@ -37,14 +37,9 @@ unsigned int SPKMeansGalois::getNumThreads()
 
 /****** GALOIS IMPLEMENTATION STARTS HERE ******/
 
-// Define the Galois graph as needed: Nodes are just document vectors.
-typedef float* Node;
-typedef Galois::Graph::LC_CSR_Graph<Node, void> Graph;
 
-
-
-// Galois struct contains variables and the parallel execution method.
-struct Compute {
+// General compute struct contains variables and the parallel execution method.
+/*struct Compute {
 
     ClusterData *data;
     Compute(ClusterData *data) : data(data) {}
@@ -90,6 +85,58 @@ struct ComputeQuality : Compute {
     }
     
 };
+*/
+
+/*struct TestCompute {
+    int wc;
+    void operator () (float* &x, Galois::Runtime::UserContextAccess<float*>::SuperTy &ctx) {
+        float z = 0;
+        for(int i=0; i<wc; i++)
+            z += x[i];
+        cout << z << endl;
+    }
+};*/
+
+struct ComputePartitions {
+
+    bool optimize;
+    ClusterData *data;
+
+    vector<float*> *new_partitions; // TODO - Galois structure???
+
+    // pointer to the cosineSimilarity function
+    float (*cosineSimilarity) (float *cv, int doc_index);
+
+
+    // TODO - fix
+    ComputePartitions(ClusterData *data_,
+                      float (*cS_ptr) (float *cv, int doc_index),
+                      bool optimize_)
+        : data(data_), cosineSimilarity(cS_ptr), optimize(optimize_) {}
+
+
+    // Compute the new partitions:
+    void operator () (
+        int &i,
+        Galois::Runtime::UserContextAccess<float*>::SuperTy &ctx)
+    {
+        int k = data->k;
+        float **concepts = data->concepts;
+        bool *changed = data->changed;
+        float *cValues = data->cValues;
+
+        int cIndx = 0;
+        if(changed[0] || !optimize)
+            cValues[i*k] = cosineSimilarity(concepts[0], i);
+        for(int j=1; j<k; j++) {
+            if(changed[j] || !optimize)
+                cValues[i*k + j] = cosineSimilarity(concepts[j], i);
+            if(cValues[i*k + j] > cValues[i*k + cIndx])
+                cIndx = j;
+        }
+    }
+};
+
 
 ClusterData* SPKMeansGalois::runSPKMeans()
 {
@@ -100,8 +147,24 @@ ClusterData* SPKMeansGalois::runSPKMeans()
     // apply the TXN scheme on the document vectors (normalize them)
     txnScheme();
 
+    // convert data to Galois format
+    Galois::LargeArray<float*> docs;
+    docs.create(dc, nullptr);
+
+    for(int i=0; i<dc; i++)
+        docs[i] = doc_matrix[i];
+
+    /*TestCompute t;
+    t.wc = wc;
+    Galois::for_each(docs.begin(), docs.begin() + dc,
+                     t,
+                     Galois::loopname("Compute New Partitions"));
+    */
+
+    return 0;
+
     // initialize the data arrays
-    ClusterData *data = new ClusterData(k, dc, wc);
+/*    ClusterData *data = new ClusterData(k, dc, wc);
 
     // choose an initial partitioning, and get concepts and quality
     initPartitions(data);
@@ -133,29 +196,26 @@ ClusterData* SPKMeansGalois::runSPKMeans()
         // TODO - better to do 3 steps, or all at the same time with Galois?
 
         ptimer.start();
-        /* TODO
-        Galois::for_each(g.begin(), g.begin() + dc,
-                         cP(),
-                         Galois::loopname("Compute New Partitions"));
-        */
+        // TODO
+        //Galois::for_each(g.begin(), g.begin() + dc,
+        //                 cP(),
+        //                 Galois::loopname("Compute New Partitions"));
         ptimer.stop();
         p_time += ptimer.get();
 
         ctimer.start();
-        /* TODO
-        Galois::for_each(g.begin(), g.begin() + dc,
-                         cC(),
-                         Galois::loopname("Compute Concept Vectors"));
-        */
+        // TODO
+        //Galois::for_each(g.begin(), g.begin() + dc,
+        //                 cC(),
+        //                 Galois::loopname("Compute Concept Vectors"));
         ctimer.stop();
         c_time += ctimer.get();
 
         qtimer.start();
-        /* TODO
-        Galois::for_each(g.begin(), g.begin() + dc,
-                         cQ(),
-                         Galois::loopname("Compute Quality"));
-        */
+        // TODO
+        //Galois::for_each(g.begin(), g.begin() + dc,
+        //                 cQ(),
+        //                 Galois::loopname("Compute Quality"));
         qtimer.stop();
         q_time += qtimer.get();
 
@@ -170,4 +230,5 @@ ClusterData* SPKMeansGalois::runSPKMeans()
 
     // return the resulting partitions and concepts in the ClusterData struct
     return data;
+    */
 }
