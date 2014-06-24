@@ -62,8 +62,15 @@ struct ComputePartitions {
     ComputePartitions(ClusterData *data_, float **doc_matrix_)
         : data(data_), doc_matrix(doc_matrix_)
     {
-        //new_partitions = 0;
+        new_partitions = 0;
         mut = new mutex();
+    }
+    
+    // clear memory: delete the mutex
+    // can't put in destructor because Galois keeps calling it...?
+    void clearMemory()
+    {
+        delete mut;
     }
 
     
@@ -225,6 +232,9 @@ ClusterData* SPKMeansGalois::runSPKMeans()
     // report runtime statistics
     timer.stop();
     reportTime(iterations, timer.get(), p_time, c_time, q_time);
+
+    // clean up
+    cP.clearMemory();
 
     // return the resulting partitions and concepts in the ClusterData struct
     return data;
