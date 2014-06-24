@@ -8,6 +8,8 @@
 #ifndef SPKMEANS_H
 #define SPKMEANS_H
 
+#include <vector>
+
 #include "cluster_data.h"
 
 #define Q_THRESHOLD 0.001
@@ -29,13 +31,6 @@ class SPKMeans {
     // optimization flag
     bool optimize;
     
-    // report current partition quality
-    void reportQuality(ClusterData *data, float quality, float dQ);
-
-    // report timer stats
-    void reportTime(int iterations, float total_time,
-                    float p_time = 0, float c_time = 0, float q_time = 0);
-
     // matrix setup schemes
     void txnScheme();
 
@@ -46,8 +41,21 @@ class SPKMeans {
     float computeQ(float **partition, int p_size, float *concept);
     float computeQ(ClusterData *data);
 
-    // spkmeans algorithm computation function
+    // spkmeans algorithm computation functions
+    void findChangedPartitions(std::vector<float*> *new_partitions,
+                               ClusterData *data);
+    void findChangedPartitionsUnordered(std::vector<float*> *new_partitions,
+                                        ClusterData *data);
+    void copyPartitions(std::vector<float*> *new_partitions,
+                        ClusterData *data);
     float* computeConcept(float **partition, int p_size);
+
+    // report current partition quality
+    void reportQuality(ClusterData *data, float quality, float dQ);
+
+    // report timer stats
+    void reportTime(int iterations, float total_time,
+                    float p_time = 0, float c_time = 0, float q_time = 0);
 
   public:
     // initialize wc, dc, k, and doc_matrix, and document norms

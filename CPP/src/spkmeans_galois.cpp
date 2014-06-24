@@ -12,8 +12,6 @@
 
 #include "Galois/Galois.h"
 #include "Galois/Timer.h"
-//#include "Galois/Graph/Graph.h"
-//#include "Galois/Graph/LCGraph.h"
 #include "llvm/ADT/SmallVector.h"
 #include "Galois/LargeArray.h"
 
@@ -46,66 +44,6 @@ unsigned int SPKMeansGalois::getNumThreads()
 
 /****** GALOIS IMPLEMENTATION STARTS HERE ******/
 
-
-// General compute struct contains variables and the parallel execution method.
-/*struct Compute {
-
-    ClusterData *data;
-    Compute(ClusterData *data) : data(data) {}
-
-    void operator () (Graph::GraphNode document,
-                      Galois::UserContext<Graph::GraphNode> &ctx) {}
-
-};
-
-
-struct ComputePartitions : public Compute {
-
-    ComputePartitions(ClusterData *data) : Compute(data) {}
-
-    void operator () (Graph::GraphNode document,
-                      Galois::UserContext<Graph::GraphNode> &ctx)
-    {
-        // compute partitons here
-    }
-    
-};
-
-struct ComputeConcepts : Compute {
-
-    ComputeConcepts(ClusterData *data) : Compute(data) {}
-
-    void operator () (Graph::GraphNode document,
-                      Galois::UserContext<Graph::GraphNode> &ctx)
-    {
-        // compute concept vectors here
-    }
-    
-};
-
-struct ComputeQuality : Compute {
-
-    ComputeQuality(ClusterData *data) : Compute(data) {}
-
-    void operator () (Graph::GraphNode document,
-                      Galois::UserContext<Graph::GraphNode> &ctx)
-    {
-        // compute partition quality here 
-    }
-    
-};
-*/
-
-/*struct TestCompute {
-    int wc;
-    void operator () (float* &x, Galois::Runtime::UserContextAccess<float*>::SuperTy &ctx) {
-        float z = 0;
-        for(int i=0; i<wc; i++)
-            z += x[i];
-        cout << z << endl;
-    }
-};*/
-
 struct ComputePartitions {
 
     ClusterData *data;
@@ -123,6 +61,9 @@ struct ComputePartitions {
     ComputePartitions(ClusterData *data_, float **doc_matrix_)
         : data(data_), doc_matrix(doc_matrix_) {}
 
+    
+    // clear out the new_partitions vector for new computations
+    // TODO - memory leak: delete the old one
     void prepare()
     {
         //new_partitions = new vector<float*>[data->k];
@@ -151,7 +92,8 @@ struct ComputePartitions {
                 cIndx = j;
         }
 
-        // add the document to the partition (race condition region)
+        // add the document to the partition (race condition region):
+        // - race condition is handled by Galois
         new_partitions[cIndx].push_back(doc_matrix[i]);
     }
 };

@@ -7,10 +7,9 @@
 
 #include "spkmeans.h"
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
-#include <queue>
-#include <vector>
 
 #include "Galois/Timer.h"
 
@@ -189,6 +188,104 @@ float SPKMeans::cosineSimilarity(float *cv, int doc_index)
 
 
 
+// Determines which partitions have changed between the old partitioning
+// (in the ClusterData array) and the new partitions (in the given vector).
+// Sets the ClusterData::changed values acoordingly.
+void SPKMeans::findChangedPartitions(vector<float*> *new_partitions,
+    ClusterData *data)
+{
+    if(optimize) { // skip if not optimizing
+        for(int i=0; i<(data->k); i++) {
+            if(data->p_sizes[i] == new_partitions[i].size()) {
+                data->changed[i] = false;
+                for(int j=0; j<(data->p_sizes[i]); j++) {
+                    if(data->partitions[i][j] != new_partitions[i][j]) {
+                        data->changed[i] = true;
+                        break;
+                    }
+                }
+            }
+            else
+                data->changed[i] = true;
+        }
+    }
+    // check 2 (test)
+    // TODO - seems like the first one works just fine, can we prove it?
+    /*for(int i=0; i<k; i++) {
+        if(p_sizes[i] == new_partitions[i].size()) {
+            // for each vector in the old partition, check if it exists
+            //  in the new partition
+            for(int a=0; a<p_sizes[i]; a++) {
+                bool match = false;
+                for(int b=0; b<p_sizes[i]; b++) {
+                    // if the vector in old partition is found in the new
+                    //  partition, we have a match.
+                    if(partitions[i][a] == new_partitions[i][b]) {
+                        match = true;
+                        break;
+                    }
+                }
+                // if no match was found, that this partition has changed
+                if(!match) {
+                    if(changed[i] == false)
+                        cout << "FAILED" << endl;
+                    break;
+                }
+            }
+        }
+    }*/
+}
+
+
+
+// Same as findChangedPartitions, but without the assumption that the new
+// partitions were computed in order. Use this version when computing the
+// partitions in parallel or when unsure what the order of computation was.
+void SPKMeans::findChangedPartitionsUnordered(vector<float*> *new_partitions,
+    ClusterData *data)
+{
+    if(optimize) { // skip if not optimizing
+        for(int i=0; i<(data->k); i++) {
+            // for each partition, check if new and old are same size
+            if(data->p_sizes[i] == new_partitions[i].size()) {
+                data->changed[i] = false;
+                // for each document in old partition
+                for(int j=0; j<(data->p_sizes[i]); j++) {
+                    // check if document is in new partition (we need
+                    // std::find here because order is not guaranteed due
+                    // to the parallelization)
+                    if(find(new_partitions[i].begin(),
+                            new_partitions[i].end(),
+                            data->partitions[i][j]) == new_partitions[i].end())
+                    {
+                        data->changed[i] = true;
+                        break;
+                    }
+                }
+            }
+            else
+                data->changed[i] = true;
+        }
+    }
+}
+
+
+
+// Clears the partitions in the ClusterData struct, and copies the new
+// partitions (and size information) over from the given vector.
+void SPKMeans::copyPartitions(vector<float*> *new_partitions,
+    ClusterData *data)
+{
+    data->clearPartitions();
+    for(int i=0; i<(data->k); i++) {
+        data->partitions[i] = new_partitions[i].data();
+        data->p_sizes[i] = new_partitions[i].size();
+    }
+
+}
+
+
+
 // Computes the concept vector of the given partition. A partition is an array
 // of document vectors, and the concept vector will be allocated and populated.
 float* SPKMeans::computeConcept(float **partition, int p_size)
@@ -265,54 +362,11 @@ ClusterData* SPKMeans::runSPKMeans()
         ptimer.stop();
         p_time += ptimer.get();
 
-        // check if partitions changed since last time (skip if not optimizing)
-        if(optimize) {
-            for(int i=0; i<k; i++) {
-                if(p_sizes[i] == new_partitions[i].size()) {
-                    changed[i] = false;
-                    for(int j=0; j<p_sizes[i]; j++) {
-                        if(partitions[i][j] != new_partitions[i][j]) {
-                            changed[i] = true;
-                            break;
-                        }
-                    }
-                }
-                else
-                    changed[i] = true;
-            }
-        }
-        // check 2 (test)
-        // TODO - seems like the first one works just fine, can we prove it?
-        /*for(int i=0; i<k; i++) {
-            if(p_sizes[i] == new_partitions[i].size()) {
-                // for each vector in the old partition, check if it exists
-                //  in the new partition
-                for(int a=0; a<p_sizes[i]; a++) {
-                    bool match = false;
-                    for(int b=0; b<p_sizes[i]; b++) {
-                        // if the vector in old partition is found in the new
-                        //  partition, we have a match.
-                        if(partitions[i][a] == new_partitions[i][b]) {
-                            match = true;
-                            break;
-                        }
-                    }
-                    // if no match was found, that this partition has changed
-                    if(!match) {
-                        if(changed[i] == false)
-                            cout << "FAILED" << endl;
-                        break;
-                    }
-                }
-            }
-        }*/
+        // check if partitions changed since last time
+        findChangedPartitions(new_partitions, data);
 
         // transfer the new partitions to the partitions array
-        data->clearPartitions();
-        for(int i=0; i<k; i++) {
-            partitions[i] = new_partitions[i].data();
-            p_sizes[i] = new_partitions[i].size();
-        }
+        copyPartitions(new_partitions, data);
 
         // compute new concept vectors
         ctimer.start();

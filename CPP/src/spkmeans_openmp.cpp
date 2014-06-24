@@ -10,8 +10,6 @@
 #include <cmath>
 #include <iostream>
 #include <mutex>
-#include <queue>
-#include <vector>
 
 #include <omp.h>
 #include "Galois/Timer.h"
@@ -79,6 +77,9 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     float ***partitions = data->partitions;
     int *p_sizes = data->p_sizes;
     float **concepts = data->concepts;
+    bool *changed = data->changed;
+    float *cValues = data->cValues;
+    float *qualities = data->qualities;
 
     // choose an initial partitioning, and get first concepts
     initPartitions(data);
@@ -90,14 +91,6 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     float p_time = 0;
     float c_time = 0;
     float q_time = 0;
-
-    // keep track of which partitions were changed, the cosine similarities
-    // between all docs and clusters, and the qualities of each cluster.
-    bool changed[k];
-    for(int i=0; i<k; i++)
-        changed[i] = true;
-    float cValues[k*dc];
-    float qualities[k];
 
     // compute initial quality, and cache the quality values
     float quality = computeQ(data);
@@ -136,37 +129,11 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
         ptimer.stop();
         p_time += ptimer.get();
 
-        // check if partitions changed since last time (skip if not optimizing)
-        if(optimize) {
-            for(int i=0; i<k; i++) {
-                // for each partition, check if new and old are same size
-                if(p_sizes[i] == new_partitions[i].size()) {
-                    changed[i] = false;
-                    // for each document in old partition
-                    for(int j=0; j<p_sizes[i]; j++) {
-                        // check if document is in new partition (we need
-                        // std::find here because order is not guaranteed due
-                        // to the parallelization)
-                        if(find(new_partitions[i].begin(),
-                                new_partitions[i].end(),
-                                partitions[i][j]) == new_partitions[i].end())
-                        {
-                            changed[i] = true;
-                            break;
-                        }
-                    }
-                }
-                else
-                    changed[i] = true;
-            }
-        }
+        // check if partitions changed since last time
+        findChangedPartitionsUnordered(new_partitions, data);
 
         // transfer the new partitions to the partitions array
-        data->clearPartitions();
-        for(int i=0; i<k; i++) {
-            partitions[i] = new_partitions[i].data();
-            p_sizes[i] = new_partitions[i].size();
-        }
+        copyPartitions(new_partitions, data);
 
         // compute new concept vectors
         ctimer.start();
@@ -189,17 +156,8 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
         qtimer.stop();
         q_time += qtimer.get();
 
-        // report quality and (if optimizing) how many partitions changed
-        cout << "Quality: " << quality << " (+" << dQ << ")";
-        if(optimize) {
-            int num_same = 0;
-            for (int i=0; i<k; i++)
-                if(!changed[i])
-                    num_same++;
-            cout << " --- " << num_same << " partitions are the same." << endl;
-        }
-        else
-            cout << " --- optimization disabled." << endl;
+        // report the quality of the current partition
+        reportQuality(data, quality, dQ);
     }
 
 
