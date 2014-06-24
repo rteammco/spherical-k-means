@@ -53,7 +53,8 @@ struct ComputePartitions {
     // just generate the new partitions locally, and swap memory after
     //vector<float*> *new_partitions;
     //Galois::LargeArray<float*> *new_partitions;
-    llvm::SmallVector<float*, 5> *new_partitions; // TODO - what the heck is N (5)?
+    //llvm::SmallVector<float*, 5> *new_partitions; // TODO - what the heck is N (5)?
+    vector<float*> *new_partitions;
 
     // binding for the cosineSimilarity function in the SPKMeans object
     function<float(float*, int)> cosineSimilarity;
@@ -80,7 +81,8 @@ struct ComputePartitions {
     {
         //new_partitions = new vector<float*>[data->k];
         //new_partitions = new Galois::LargeArray<float*>[data->k];
-        new_partitions = new llvm::SmallVector<float*, 5>[data->k];
+        //new_partitions = new llvm::SmallVector<float*, 5>[data->k];
+        new_partitions = new vector<float*>[data->k];
     }
 
     // Compute the new partitions:
