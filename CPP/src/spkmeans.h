@@ -48,7 +48,6 @@ class SPKMeans {
                                         ClusterData *data);
     void copyPartitions(std::vector<float*> *new_partitions,
                         ClusterData *data);
-    float* computeConcept(float **partition, int p_size);
 
     // report current partition quality
     void reportQuality(ClusterData *data, float quality, float dQ);
@@ -67,9 +66,9 @@ class SPKMeans {
     void disableOptimization();
     void enableOptimization();
 
-    // cosine similarity compute function: made public for use by Galois
-    // computation structs
+    // spkmeans computation functions made public for binding to Galois structs
     float cosineSimilarity(float *cv, int doc_index);
+    float* computeConcept(float **partition, int p_size);
 
     // the algorithm is implemented differently by each type of paradigm
     virtual ClusterData* runSPKMeans();
