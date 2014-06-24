@@ -124,7 +124,7 @@ void SPKMeans::initPartitions(ClusterData *data)
 
         int p_size = top - base + 1;
         data->p_sizes[i] = p_size;
-        cout << "Created new partition of size " << p_size << endl;
+        //cout << "Created new partition of size " << p_size << endl;
 
         data->partitions[i] = new float*[p_size];
         for(int j=0; j<p_size; j++)
