@@ -51,7 +51,6 @@ struct ComputePartitions {
     mutex *mut;
 
     // just generate the new partitions locally, and swap memory after
-    //vector<float*> *new_partitions;
     //Galois::LargeArray<float*> *new_partitions;
     //llvm::SmallVector<float*, 5> *new_partitions; // TODO - what the heck is N (5)?
     vector<float*> *new_partitions;
@@ -79,7 +78,6 @@ struct ComputePartitions {
     // TODO - memory leak: delete the old one
     void prepare()
     {
-        //new_partitions = new vector<float*>[data->k];
         //new_partitions = new Galois::LargeArray<float*>[data->k];
         //new_partitions = new llvm::SmallVector<float*, 5>[data->k];
         new_partitions = new vector<float*>[data->k];
@@ -166,12 +164,10 @@ ClusterData* SPKMeansGalois::runSPKMeans()
         // compute new partitions based on old concept vectors
         ptimer.start();
         cP.prepare();
-        cout << "Prepare" << endl;
         // TODO - libc error in for_each part
         Galois::for_each(start_dc, end_dc, cP, Galois::loopname("Compute Partitions"));
         ptimer.stop();
         p_time += ptimer.get();
-        cout << "Partitions" << endl;
 
         // check if partitions changed since last time
         //findChangedPartitionsUnordered(cP.new_partitions, data);
@@ -194,7 +190,6 @@ ClusterData* SPKMeansGalois::runSPKMeans()
                     data->changed[i] = true;
             }
         }
-        cout << "Change" << endl;
 
         // transfer new partitions to the partitions array
         //copyPartitions(cP.new_partitions, data);
@@ -204,13 +199,20 @@ ClusterData* SPKMeansGalois::runSPKMeans()
             data->partitions[i] = cP.new_partitions[i].data();
             data->p_sizes[i] = cP.new_partitions[i].size();
         }
-        cout << "Copy" << endl;
 
         // compute new concept vectors
         ctimer.start();
+        // TODO - use Galois to compute these
+        for(int i=0; i<(data->k); i++) {
+            // only update concept vectors if partition has changed
+            if(data->changed[i]) {
+                delete[] data->concepts[i];
+                data->concepts[i] = computeConcept(data->partitions[i],
+                                                   data->p_sizes[i]);
+            }
+        }
         ctimer.stop();
         c_time += ctimer.get();
-        cout << "Concepts" << endl;
 
         // compute quality of new partitioning
         // TODO - segfault somewhere below
@@ -220,14 +222,9 @@ ClusterData* SPKMeansGalois::runSPKMeans()
         quality = n_quality;
         qtimer.stop();
         q_time += qtimer.get();
-        cout << "Quality" << endl;
 
         // report quality and (if optimizing) which partitions changed
         reportQuality(data, quality, dQ);
-        cout << "Report" << endl;
-
-        // TODO - temporary
-        break;
     }
 
 

@@ -1,0 +1,20 @@
+The files are structured as follows (starting with line 1):
+
+The first line is the number of documents in the data set.
+The second line is the number of words accross all documents in the data set.
+The third line is the number of non-zero entries in the document matrix. That
+    is, how many document-to-word connections there are in the data set. This
+    can be used to approximate the optimal K value (number of clusters).
+
+The remaining lines represent entrees in the document matrix. The first number
+    is the document ID (starting at 1). The second number is the word ID (also
+    starting at 1). The third number is how many times that word appears in
+    said document.
+
+
+EXAMPLE LAYOUT (line numbers enumerated on the left):
+
+1   number_of_documents
+2   number_of_words
+3   number_of_nonzero_entries
+4+  doc_id word_id count
