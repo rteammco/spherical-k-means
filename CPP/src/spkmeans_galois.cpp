@@ -12,8 +12,12 @@
 
 #include "Galois/Galois.h"
 #include "Galois/Timer.h"
-#include "Galois/Graph/Graph.h"
-#include "Galois/Graph/LCGraph.h"
+//#include "Galois/Graph/Graph.h"
+//#include "Galois/Graph/LCGraph.h"
+#include "llvm/ADT/SmallVector.h"
+#include "Galois/LargeArray.h"
+
+#include <boost/iterator/counting_iterator.hpp>
 
 using namespace std;
 
@@ -104,39 +108,51 @@ struct ComputeQuality : Compute {
 
 struct ComputePartitions {
 
-    bool optimize;
     ClusterData *data;
+    float **doc_matrix;
 
     // just generate the new partitions locally, and swap memory after
-    vector<float*> *new_partitions; // TODO - Galois structure???
+    //vector<float*> *new_partitions;
+    //Galois::LargeArray<float*> *new_partitions;
+    llvm::SmallVector<float*, 5> *new_partitions; // TODO - what the heck is N (5)?
 
     // binding for the cosineSimilarity function in the SPKMeans object
     function<float(float*, int)> cosineSimilarity;
 
-    // constructor: links all of the components to the struct
-    ComputePartitions(ClusterData *data_, bool optimize_)
-        : data(data_), optimize(optimize_) {}
+    // constructor: get the cluster data pointers
+    ComputePartitions(ClusterData *data_, float **doc_matrix_)
+        : data(data_), doc_matrix(doc_matrix_) {}
 
+    void prepare()
+    {
+        //new_partitions = new vector<float*>[data->k];
+        //new_partitions = new Galois::LargeArray<float*>[data->k];
+        new_partitions = new llvm::SmallVector<float*, 5>[data->k];
+    }
 
     // Compute the new partitions:
-    void operator () (
-        int &i,
-        Galois::Runtime::UserContextAccess<float*>::SuperTy &ctx)
+    void operator () (int &i, Galois::UserContext<int> &ctx)
+        //Galois::Runtime::UserContextAccess<float*>::SuperTy &ctx)
     {
+        // get pointers to everything from the data struct
         int k = data->k;
         float **concepts = data->concepts;
         bool *changed = data->changed;
         float *cValues = data->cValues;
 
+        // find the best partition for document i
         int cIndx = 0;
-        if(changed[0] || !optimize)
+        if(changed[0])
             cValues[i*k] = cosineSimilarity(concepts[0], i);
         for(int j=1; j<k; j++) {
-            if(changed[j] || !optimize)
+            if(changed[j])
                 cValues[i*k + j] = cosineSimilarity(concepts[j], i);
             if(cValues[i*k + j] > cValues[i*k + cIndx])
                 cIndx = j;
         }
+
+        // add the document to the partition (race condition region)
+        new_partitions[cIndx].push_back(doc_matrix[i]);
     }
 };
 
@@ -154,20 +170,39 @@ ClusterData* SPKMeansGalois::runSPKMeans()
     // initialize the data arrays
     ClusterData *data = new ClusterData(k, dc, wc);
 
+    // choose an initial partitioning, and get first concepts
+    initPartitions(data);
+
+
     // create the Galois computation structs
-    ComputePartitions cP(data, optimize);
+    ComputePartitions cP(data, doc_matrix);
+
     // bind the cosine similarity function from SPKMeans to the struct
     cP.cosineSimilarity = bind(&SPKMeans::cosineSimilarity,
                                this, // use this object's instance variables
                                placeholders::_1, placeholders::_2);
     
 
+    // compute initial quality
+    float quality = computeQ(data);
+    cout << "Initial quality: " << quality << endl;
+
+    // set up iterators for use by the Galois loops
+    auto start_dc = boost::make_counting_iterator<int>(0);
+    auto end_dc = boost::make_counting_iterator<int>(dc);
+
+    cP.prepare();
+    Galois::for_each(start_dc, end_dc, cP, Galois::loopname("Compute Partitions"));
+    for(int i=0; i<k; i++)
+        cout << cP.new_partitions[i].size() << endl;
+
+
     // convert data to Galois format
-    Galois::LargeArray<float*> docs;
+    /*Galois::LargeArray<float*> docs;
     docs.create(dc, nullptr);
 
     for(int i=0; i<dc; i++)
-        docs[i] = doc_matrix[i];
+        docs[i] = doc_matrix[i];*/
 
     /*TestCompute t;
     t.wc = wc;
@@ -176,7 +211,7 @@ ClusterData* SPKMeansGalois::runSPKMeans()
                      Galois::loopname("Compute New Partitions"));
     */
 
-    return 0;
+    return data;
 
     // initialize the data arrays
 /*    ClusterData *data = new ClusterData(k, dc, wc);
