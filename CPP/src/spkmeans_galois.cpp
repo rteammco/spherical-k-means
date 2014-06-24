@@ -9,11 +9,11 @@
 
 #include <functional>
 #include <iostream>
+#include <mutex>
 
 #include "Galois/Galois.h"
 #include "Galois/Timer.h"
 #include "llvm/ADT/SmallVector.h"
-#include "Galois/LargeArray.h"
 
 #include <boost/iterator/counting_iterator.hpp>
 
@@ -48,6 +48,7 @@ struct ComputePartitions {
 
     ClusterData *data;
     float **doc_matrix;
+    mutex *mut;
 
     // just generate the new partitions locally, and swap memory after
     //vector<float*> *new_partitions;
@@ -59,7 +60,11 @@ struct ComputePartitions {
 
     // constructor: get the cluster data pointers
     ComputePartitions(ClusterData *data_, float **doc_matrix_)
-        : data(data_), doc_matrix(doc_matrix_) {}
+        : data(data_), doc_matrix(doc_matrix_)
+    {
+        //new_partitions = 0;
+        mut = new mutex();
+    }
 
     
     // clear out the new_partitions vector for new computations
@@ -93,8 +98,10 @@ struct ComputePartitions {
         }
 
         // add the document to the partition (race condition region):
-        // - race condition is handled by Galois
+        // - race condition is handled by Galois?
+        mut->lock();
         new_partitions[cIndx].push_back(doc_matrix[i]);
+        mut->unlock();
     }
 };
 
@@ -126,7 +133,12 @@ ClusterData* SPKMeansGalois::runSPKMeans()
     
 
     // keep track of all individual component times for analysis
-    // TODO
+    Galois::Timer ptimer;
+    Galois::Timer ctimer;
+    Galois::Timer qtimer;
+    float p_time = 0;
+    float c_time = 0;
+    float q_time = 0;
 
     // compute initial quality
     float quality = computeQ(data);
@@ -143,23 +155,83 @@ ClusterData* SPKMeansGalois::runSPKMeans()
         iterations++;
 
         // compute new partitions based on old concept vectors
+        ptimer.start();
         cP.prepare();
+        cout << "Prepare" << endl;
+        // TODO - libc error in for_each part
         Galois::for_each(start_dc, end_dc, cP, Galois::loopname("Compute Partitions"));
+        ptimer.stop();
+        p_time += ptimer.get();
+        cout << "Partitions" << endl;
 
         // check if partitions changed since last time
+        //findChangedPartitionsUnordered(cP.new_partitions, data);
+        // ^ TODO ^ function works with std::vector, not llvm::SmallVector
+        if(optimize) {
+            for(int i=0; i<k; i++) {
+                if(data->p_sizes[i] == cP.new_partitions[i].size()) {
+                    data->changed[i] = false;
+                    for(int j=0; j<(data->p_sizes[i]); j++) {
+                        if(find(cP.new_partitions[i].begin(),
+                                cP.new_partitions[i].end(),
+                                data->partitions[i][j]) == cP.new_partitions[i].end())
+                        {
+                            data->changed[i] = true;
+                            break;
+                        }
+                    }
+                }
+                else
+                    data->changed[i] = true;
+            }
+        }
+        cout << "Change" << endl;
 
         // transfer new partitions to the partitions array
+        //copyPartitions(cP.new_partitions, data);
+        // ^ TODO ^ function works with std::vector, not llvm::SmallVector
+        data->clearPartitions();
+        for(int i=0; i<k; i++) {
+            data->partitions[i] = cP.new_partitions[i].data();
+            data->p_sizes[i] = cP.new_partitions[i].size();
+        }
+        cout << "Copy" << endl;
 
         // compute new concept vectors
+        ctimer.start();
+        ctimer.stop();
+        c_time += ctimer.get();
+        cout << "Concepts" << endl;
 
         // compute quality of new partitioning
+        // TODO - segfault somewhere below
+        qtimer.start();
+        float n_quality = computeQ(data);
+        dQ = n_quality - quality;
+        quality = n_quality;
+        qtimer.stop();
+        q_time += qtimer.get();
+        cout << "Quality" << endl;
 
         // report quality and (if optimizing) which partitions changed
-
+        reportQuality(data, quality, dQ);
+        cout << "Report" << endl;
 
         // TODO - temporary
         break;
     }
+
+
+    // report runtime statistics
+    timer.stop();
+    reportTime(iterations, timer.get(), p_time, c_time, q_time);
+
+    // return the resulting partitions and concepts in the ClusterData struct
+    return data;
+
+
+
+    // TODO - delete all below
 
     // convert data to Galois format
     /*Galois::LargeArray<float*> docs;
@@ -174,8 +246,6 @@ ClusterData* SPKMeansGalois::runSPKMeans()
                      t,
                      Galois::loopname("Compute New Partitions"));
     */
-
-    return data;
 
     // initialize the data arrays
 /*    ClusterData *data = new ClusterData(k, dc, wc);
