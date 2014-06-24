@@ -183,6 +183,9 @@ ClusterData* SPKMeansGalois::runSPKMeans()
                                placeholders::_1, placeholders::_2);
     
 
+    // keep track of all individual component times for analysis
+    // TODO
+
     // compute initial quality
     float quality = computeQ(data);
     cout << "Initial quality: " << quality << endl;
@@ -191,11 +194,30 @@ ClusterData* SPKMeansGalois::runSPKMeans()
     auto start_dc = boost::make_counting_iterator<int>(0);
     auto end_dc = boost::make_counting_iterator<int>(dc);
 
-    cP.prepare();
-    Galois::for_each(start_dc, end_dc, cP, Galois::loopname("Compute Partitions"));
-    for(int i=0; i<k; i++)
-        cout << cP.new_partitions[i].size() << endl;
+    // do spherical k-means loop
+    float dQ = Q_THRESHOLD * 10;
+    int iterations = 0;
+    while(dQ > Q_THRESHOLD) {
+        iterations++;
 
+        // compute new partitions based on old concept vectors
+        cP.prepare();
+        Galois::for_each(start_dc, end_dc, cP, Galois::loopname("Compute Partitions"));
+
+        // check if partitions changed since last time
+
+        // transfer new partitions to the partitions array
+
+        // compute new concept vectors
+
+        // compute quality of new partitioning
+
+        // report quality and (if optimizing) which partitions changed
+
+
+        // TODO - temporary
+        break;
+    }
 
     // convert data to Galois format
     /*Galois::LargeArray<float*> docs;

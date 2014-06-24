@@ -316,7 +316,7 @@ ClusterData* SPKMeans::runSPKMeans()
         qtimer.stop();
         q_time += qtimer.get();
 
-        // report quality and (if optimizing) how many partitions changed
+        // report quality and (if optimizing) which partitions changed
         cout << "Quality: " << quality << " (+" << dQ << ")";
         if(optimize) {
             int num_same = 0;

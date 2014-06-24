@@ -23,7 +23,7 @@ test:
 
 # Run with the larger test data set:
 run:
-	./spkmeans -d ../TestData/documents -k 4 --noresults
+	./spkmeans -d ../TestData/documents --auto --noresults --galois
 
 
 # Debug with GDB (running on larger test data set):
