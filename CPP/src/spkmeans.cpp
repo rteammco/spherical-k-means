@@ -278,8 +278,8 @@ void SPKMeans::copyPartitions(vector<float*> *new_partitions,
 {
     data->clearPartitions();
     for(int i=0; i<(data->k); i++) {
-        data->partitions[i] = new_partitions[i].data();
         data->p_sizes[i] = new_partitions[i].size();
+        data->partitions[i] = new_partitions[i].data();
     }
 }
 
