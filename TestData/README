@@ -1,4 +1,4 @@
-The files are structured as follows (starting with line 1):
+The document files are structured as follows:
 
 The first line is the number of documents in the data set.
 The second line is the number of words accross all documents in the data set.
@@ -18,3 +18,28 @@ EXAMPLE LAYOUT (line numbers enumerated on the left):
 2   number_of_words
 3   number_of_nonzero_entries
 4+  doc_id word_id count
+
+
+-------------------------------------------------------------------------------
+
+The associated vocabulary file are just a list of words. Each line is a word,
+and the line number represent the word number in the document file.
+
+For example,
+
+doc_file:
+    1
+    3
+    3
+    1 1 1
+    1 2 4
+    1 3 3
+
+vocab_file:
+    cat
+    dog
+    mouse
+
+In this example, "cat" is word 1, "dog" is word 2, and "mouse" is word 3. The
+data set only has one document in it, document 1. Document 1 has one occurrence
+of "cat", four occurences of "dog", and three occurrences of "mouse".
