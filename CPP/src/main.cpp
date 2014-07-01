@@ -260,6 +260,8 @@ int main(int argc, char **argv)
         SPKMeansGalois spkm_galois(D, k, dc, wc, num_threads);
         if(!optimize)
             spkm_galois.disableOptimization();
+        if(!use_scheme)
+            spkm_galois.setScheme(SPKMeans::NO_SCHEME);
         cout << " [Galois: " << spkm_galois.getNumThreads()
              << " threads]." << endl;
         data = spkm_galois.runSPKMeans();
@@ -269,6 +271,8 @@ int main(int argc, char **argv)
         SPKMeansOpenMP spkm_openmp(D, k, dc, wc, num_threads);
         if(!optimize)
             spkm_openmp.disableOptimization();
+        if(!use_scheme)
+            spkm_openmp.setScheme(SPKMeans::NO_SCHEME);
         cout << " [OpenMP: " << spkm_openmp.getNumThreads()
              << " threads]." << endl;
         data = spkm_openmp.runSPKMeans();
@@ -277,6 +281,8 @@ int main(int argc, char **argv)
         SPKMeans spkm(D, k, dc, wc);
         if(!optimize)
             spkm.disableOptimization();
+        if(!use_scheme)
+            spkm.setScheme(SPKMeans::NO_SCHEME);
         cout << " [single thread]." << endl;
         data = spkm.runSPKMeans();
     }

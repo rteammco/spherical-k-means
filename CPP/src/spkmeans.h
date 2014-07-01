@@ -18,6 +18,13 @@
 
 // Abstract implementation of the SPKMeans algorithm
 class SPKMeans {
+  public:
+    // choice of possible schemes
+    enum Scheme {
+        NO_SCHEME,
+        TXN_SCHEME
+    };
+
   protected:
     // clustering variables
     float **doc_matrix;
@@ -32,6 +39,7 @@ class SPKMeans {
     bool optimize;
     
     // matrix setup schemes
+    Scheme prep_scheme;
     void txnScheme();
 
     // initial partition setup
@@ -61,6 +69,9 @@ class SPKMeans {
     SPKMeans(float **doc_matrix_, int k_, int dc_, int wc_);
     // clean up memory
     ~SPKMeans();
+
+    // set which scheme to use
+    void setScheme(Scheme type);
 
     // switches for optimization
     void disableOptimization();

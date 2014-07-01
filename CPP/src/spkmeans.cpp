@@ -29,6 +29,9 @@ SPKMeans::SPKMeans(float **doc_matrix_, int k_, int dc_, int wc_)
     for(int i=0; i<dc; i++)
         doc_norms[i] = vec_norm(doc_matrix[i], wc);
 
+    // default scheme to TXN
+    prep_scheme = TXN_SCHEME;
+
     // initialize optimization to true (optimization will happen)
     optimize = true;
 }
@@ -39,6 +42,14 @@ SPKMeans::SPKMeans(float **doc_matrix_, int k_, int dc_, int wc_)
 SPKMeans::~SPKMeans()
 {
     delete[] doc_norms;
+}
+
+
+
+// Set the current scheme to the given type.
+void SPKMeans::setScheme(SPKMeans::Scheme type)
+{
+    prep_scheme = type;
 }
 
 
@@ -101,8 +112,12 @@ void SPKMeans::reportTime(int iterations, float total_time,
 
 // Applies the TXN scheme to each document vector of the given matrix.
 // TXN effectively just normalizes each of the document vectors.
+// TXN scheme must be set, otherwise this function will do nothing.
 void SPKMeans::txnScheme()
 {
+    if(prep_scheme != SPKMeans::TXN_SCHEME)
+        return;
+
     for(int i=0; i<dc; i++)
         vec_normalize(doc_matrix[i], wc);
 }
