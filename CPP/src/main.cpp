@@ -50,19 +50,33 @@ using namespace std;
 // Prints a message on how to use this program.
 void printUsage()
 {
+    cout << endl;
+    cout << "$ ./spkmeans [options]" << endl;
     cout << "Argument options:" << endl
-         << "  [-d docfile]     document file path" << endl
-         << "  [-v vocabfile]   vocabulary file name" << endl
-         << "  [-k num]         value of k (number of clusters)" << endl
-         << "  [-t numthreads]  number of threads (when applicable)" << endl
+         << "  [-d docfile]     set document file path" << endl
+         << "  [-v vocabfile]   set vocabulary file path" << endl
+         << "  [-k num]         set value of k (number of clusters)" << endl
+         << "  [-t numthreads]  set number of threads* (if applicable)" << endl
          << "  [--galois]       run in Galois mode" << endl
          << "  [--openmp]       run in OpenMP mode" << endl
-         << "  [--noresults]    squelch results from being printed" << endl
          << "  [--autok]        set K automatically using input data" << endl
-         << "  [--noop]         turn off do any extra optimizations" << endl
+         << "  [--noscheme]     do not normalize weight values" << endl
+         << "  [--noresults]    squelch results from being printed" << endl
+         << "  [--noop]         turn off all optimizations" << endl
          << "Other commands:" << endl
-         << " $ ./spkmeans --help" << endl
-         << " $ ./spkmeans --version" << endl;
+         << "  $ ./spkmeans --help" << endl
+         << "  $ ./spkmeans --version" << endl;
+    cout << "Default values:" << endl
+         << "  > Document File: " << DEFAULT_DOC_FILE << endl
+         << "  > Num. Clusters: " << DEFAULT_K << endl
+         << "  > Num. Threads:  " << DEFAULT_THREADS << endl
+         << "  > Mode:          " << "single thread (normal)" << endl
+         << "    No vocabulary file (indices will be used instead)," << endl
+         << "    using TXN scheme," << endl
+         << "    displaying clustering results," << endl
+         << "    optimization enabled." << endl;
+    cout << "*To use max number of threads available, set to t = 0." << endl;
+    cout << endl;
 }
 
 
@@ -123,7 +137,7 @@ void displayResults(ClusterData *data, char **words, int num_to_show = 10)
 int processArgs(int argc, char **argv,
     string *doc_fname, string *vocab_fname,
     unsigned int *k, unsigned int *num_threads, unsigned int *run_type,
-    bool *show_results, bool *auto_k, bool *optimize)
+    bool *use_scheme, bool *show_results, bool *auto_k, bool *optimize)
 {
     // set defaults before proceeding to check arguments
     *doc_fname = DEFAULT_DOC_FILE;
@@ -131,6 +145,7 @@ int processArgs(int argc, char **argv,
     *k = DEFAULT_K;
     *num_threads = DEFAULT_THREADS;
     *run_type = RUN_NORMAL;
+    *use_scheme = true;
     *show_results = true;
     *auto_k = false;
     *optimize = true;
@@ -153,7 +168,10 @@ int processArgs(int argc, char **argv,
         else if(arg == "--openmp")
             *run_type = RUN_OPENMP;
 
-        // also check if flag was set to squelch displaying results
+        // also check if flag was set to disable weight normalization, squelch
+        // displaying results, or disable optimizations
+        else if(arg == "--noscheme")
+            *use_scheme = false;
         else if(arg == "--noresults")
             *show_results = false;
         else if(arg == "--noop")
@@ -202,9 +220,10 @@ int main(int argc, char **argv)
     // get file names, and set up k and number of threads
     string doc_fname, vocab_fname;
     unsigned int k, num_threads, run_type;
-    bool show_results, auto_k, optimize;
-    int retval = processArgs(argc, argv, &doc_fname, &vocab_fname,
-        &k, &num_threads, &run_type, &show_results, &auto_k, &optimize);
+    bool use_scheme, show_results, auto_k, optimize;
+    int retval = processArgs(argc, argv,
+        &doc_fname, &vocab_fname, &k, &num_threads, &run_type,
+        &use_scheme, &show_results, &auto_k, &optimize);
     if(retval == RETURN_ERROR) {
         printUsage();
         return -1;
