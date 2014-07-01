@@ -35,10 +35,11 @@ float** readDocFile(const char *fname, int *dc, int *wc, int *non_zero)
     string line;
     while(getline(infile, line)) {
         istringstream iss(line);
-        int doc_id, word_id, count;
-        if(!(iss >> doc_id >> word_id >> count))
+        int doc_id, word_id;
+        float value;
+        if(!(iss >> doc_id >> word_id >> value))
             continue;
-        mat[doc_id-1][word_id-1] = count;
+        mat[doc_id-1][word_id-1] = value;
     }
 
     infile.close();

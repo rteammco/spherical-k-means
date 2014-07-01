@@ -18,7 +18,7 @@ clean:
 
 # Run with a small test file:
 test:
-	./spkmeans -d test.txt --noresults --galois
+	./spkmeans -d test.txt --noresults
 
 
 # Run with the larger test data set:
