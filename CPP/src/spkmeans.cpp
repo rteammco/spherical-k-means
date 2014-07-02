@@ -206,6 +206,9 @@ float SPKMeans::cosineSimilarity(float *cv, int doc_index)
 // Determines which partitions have changed between the old partitioning
 // (in the ClusterData array) and the new partitions (in the given vector).
 // Sets the ClusterData::changed values acoordingly.
+// For parallel implementations, this needs to be adjusted to be order-
+// invariant. This code assumes documents were inserted into partitions in
+// order of their indices.
 void SPKMeans::findChangedPartitions(vector<float*> *new_partitions,
     ClusterData *data)
 {
@@ -213,6 +216,8 @@ void SPKMeans::findChangedPartitions(vector<float*> *new_partitions,
         for(int i=0; i<(data->k); i++) {
             if(data->p_sizes[i] == new_partitions[i].size()) {
                 data->changed[i] = false;
+                // only check forward direction: documents were inserted
+                // in order by index
                 for(int j=0; j<(data->p_sizes[i]); j++) {
                     if(data->partitions[i][j] != new_partitions[i][j]) {
                         data->changed[i] = true;
@@ -224,31 +229,6 @@ void SPKMeans::findChangedPartitions(vector<float*> *new_partitions,
                 data->changed[i] = true;
         }
     }
-    // check 2 (test)
-    // TODO - seems like the first one works just fine, can we prove it?
-    /*for(int i=0; i<k; i++) {
-        if(p_sizes[i] == new_partitions[i].size()) {
-            // for each vector in the old partition, check if it exists
-            //  in the new partition
-            for(int a=0; a<p_sizes[i]; a++) {
-                bool match = false;
-                for(int b=0; b<p_sizes[i]; b++) {
-                    // if the vector in old partition is found in the new
-                    //  partition, we have a match.
-                    if(partitions[i][a] == new_partitions[i][b]) {
-                        match = true;
-                        break;
-                    }
-                }
-                // if no match was found, that this partition has changed
-                if(!match) {
-                    if(changed[i] == false)
-                        cout << "FAILED" << endl;
-                    break;
-                }
-            }
-        }
-    }*/
 }
 
 
