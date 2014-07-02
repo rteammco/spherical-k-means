@@ -7,3 +7,4 @@ spkmeans
 __pycache__
 
 Matlab/MATLAB/*
+TestData/*.py

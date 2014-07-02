@@ -305,8 +305,8 @@ void SPKMeans::copyPartitions(vector<float*> *new_partitions,
 float* SPKMeans::computeConcept(float **partition, int p_size)
 {
     float *cv = vec_sum(partition, wc, p_size);
-    vec_multiply(cv, wc, (1.0 / wc));
-    vec_divide(cv, wc, vec_norm(cv, wc));
+    vec_divide(cv, wc, wc);
+    vec_normalize(cv, wc);
     return cv;
 }
 
