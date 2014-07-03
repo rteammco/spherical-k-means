@@ -345,8 +345,10 @@ void SPKMeans::temp_findChangedPartitions(int *old_pa, int *new_pa, bool *change
         changed[i] = false;
     for(int i=0; i<dc; i++) {
         int partition = new_pa[i];
-        if(old_pa[i] != partition)
-            changed[partition] = true;
+        if(old_pa[i] != new_pa[i]) {
+            changed[old_pa[i]] = true;
+            changed[new_pa[i]] = true;
+        }
     }
 }
 
