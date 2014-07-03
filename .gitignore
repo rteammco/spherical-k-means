@@ -2,7 +2,6 @@
 *.txt
 *.swp
 *.swo
-*.bak
 matlab_news20
 CPP/spkmeans*
 __pycache__
