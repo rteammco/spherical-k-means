@@ -27,7 +27,7 @@ run:
 
 
 # Compare two versions
-COMMAND = -d ../TestData/documents --auto --noresults --noop
+COMMAND = -d ../TestData/documents --auto --noresults
 comp:
 	./spkmeans $(COMMAND); ./spkmeans2 $(COMMAND)
 
