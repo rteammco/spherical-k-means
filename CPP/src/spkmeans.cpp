@@ -370,7 +370,8 @@ ClusterData* SPKMeans::runSPKMeans()
     float *qualities = data->qualities;
 
     // init partitions
-    int p_assignments[dc];
+    int *p_assignments = new int[dc];
+    int *new_p_assignments = new int[dc];
     temp_initPartitions(p_assignments);
 
     // compute the initial concept vectors
@@ -408,13 +409,16 @@ ClusterData* SPKMeans::runSPKMeans()
                 if(cValues[i*k + j] > cValues[i*k + cIndx])
                     cIndx = j;
             }
-            p_assignments[i] = cIndx;
+            new_p_assignments[i] = cIndx;
         }
         ptimer.stop();
         p_time += ptimer.get();
 
-        // check if partitions changed since last time
-//      temp_findChangedPartitions(p_assignments, new_p_assignments);
+        // check if partitions changed since last time, then swap pointers
+        temp_findChangedPartitions(p_assignments, new_p_assignments, changed);
+        int *temp = p_assignments;
+        p_assignments = new_p_assignments;
+        new_p_assignments = temp;
 
         // compute new concept vectors
         ctimer.start();
@@ -442,6 +446,9 @@ ClusterData* SPKMeans::runSPKMeans()
     timer.stop();
     reportTime(iterations, timer.get(), p_time, c_time, q_time);
 
+    // clean memory
+    delete[] p_assignments;
+    delete[] new_p_assignments;
     // return the resulting partitions and concepts in the ClusterData struct
     return 0;
 }
