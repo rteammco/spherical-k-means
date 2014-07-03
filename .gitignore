@@ -2,8 +2,9 @@
 *.txt
 *.swp
 *.swo
+*.bak
 matlab_news20
-spkmeans
+CPP/spkmeans*
 __pycache__
 
 Matlab/MATLAB/*

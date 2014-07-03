@@ -64,6 +64,10 @@ class SPKMeans {
     void reportTime(int iterations, float total_time,
                     float p_time = 0, float c_time = 0, float q_time = 0);
 
+    /***** TEMP ADDED */
+    float temp_computeQ(int *p_assignments, float **concepts);
+    float* temp_computeConcept(int *p_assignments, int indx);
+
   public:
     // initialize wc, dc, k, and doc_matrix, and document norms
     SPKMeans(float **doc_matrix_, int k_, int dc_, int wc_);

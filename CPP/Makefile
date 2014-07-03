@@ -26,6 +26,12 @@ run:
 	./spkmeans -d ../TestData/documents --auto --noresults --galois
 
 
+# Compare two versions
+COMMAND = -d ../TestData/documents --auto --noresults --noop
+comp:
+	./spkmeans $(COMMAND); ./spkmeans2 $(COMMAND)
+
+
 # Debug with GDB (running on larger test data set):
 #debug:
 #	gdb ./spkmeans ../TestData/documents

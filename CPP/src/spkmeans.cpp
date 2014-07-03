@@ -292,6 +292,39 @@ float* SPKMeans::computeConcept(float **partition, int p_size)
 
 
 
+/***** TEMP ADDED */
+float SPKMeans::temp_computeQ(int *p_assignments, float **concepts)
+{
+    float n_quality = 0;
+    for(int i=0; i<k; i++) {
+        float sum_p[wc];
+        for(int a=0; a<wc; a++)
+            sum_p[a] = 0;
+        for(int j=0; j<dc; j++)
+            if(p_assignments[j] == i)
+                for(int a=0; a<wc; a++)
+                    sum_p[a] += doc_matrix[j][a];
+        n_quality += vec_dot(sum_p, concepts[i], wc);
+    }
+    return n_quality;
+}
+
+float* SPKMeans::temp_computeConcept(int *p_assignments, int indx)
+{
+    float *concept = new float[wc];
+    for(int i=0; i<wc; i++)
+        concept[i] = 0;
+    for(int j=0; j<dc; j++) { // for each document
+        if(p_assignments[j] == indx) { // if doc in cluster
+            for(int i=0; i<wc; i++) // add words to concept
+                concept[i] += doc_matrix[j][i];
+        }
+    }
+    vec_divide(concept, wc, wc);
+    vec_normalize(concept, wc);
+    return concept;
+}
+
 // Runs the spherical k-means algorithm on the given sparse matrix D and
 // clusters the data into k partitions. Non-parallel (standard) version.
 ClusterData* SPKMeans::runSPKMeans()
@@ -305,15 +338,27 @@ ClusterData* SPKMeans::runSPKMeans()
 
     // initialize the data arrays; keep track of the arrays locally
     ClusterData *data = new ClusterData(k, dc, wc);
-    float ***partitions = data->partitions;
-    int *p_sizes = data->p_sizes;
     float **concepts = data->concepts;
     bool *changed = data->changed;
     float *cValues = data->cValues;
     float *qualities = data->qualities;
 
     // choose an initial partitioning, and get first concepts
-    initPartitions(data);
+    int p_assignments[dc];
+    int split = dc / k;
+    for(int i=0; i<dc; i++)
+        p_assignments[i] = i % split;
+    for(int i=0; i<k; i++)
+        concepts[i] = temp_computeConcept(p_assignments, i);
+
+    ClusterData *d2 = new ClusterData(k, dc, wc);
+    initPartitions(d2);
+    int mismatched = 0;
+    for(int i=0; i<k; i++) {
+        if(concepts[i] != d2->concepts[i])
+            mismatched++;
+    }
+    cout << mismatched << " of " << (k*wc) << " mismatched." << endl;
 
     // keep track of all individual component times for analysis
     Galois::Timer ptimer;
@@ -324,9 +369,15 @@ ClusterData* SPKMeans::runSPKMeans()
     float q_time = 0;
 
     // compute initial quality, and cache the quality values
-    float quality = computeQ(data);
+    float quality = temp_computeQ(p_assignments, concepts);
+    float quality2 = computeQ(d2);
+    d2->concepts = concepts;
+    float quality3 = computeQ(d2);
     cout << "Initial quality: " << quality << endl;
-
+    cout << "Should be: " << quality2 << endl;
+    cout << "Would be: " << quality3 << endl;
+    return 0;
+    
     // do spherical k-means loop
     float dQ = Q_THRESHOLD * 10;
     int iterations = 0;
@@ -335,10 +386,6 @@ ClusterData* SPKMeans::runSPKMeans()
 
         // compute new partitions based on old concept vectors
         ptimer.start();
-        // TODO - new_partitions isn't deleted (memory leak?)
-        vector<float*> *new_partitions = new vector<float*>[k];
-        for(int i=0; i<k; i++)
-            new_partitions[i] = vector<float*>();
         for(int i=0; i<dc; i++) {
             int cIndx = 0;
             // only update cosine similarities if partitions have changed
@@ -351,32 +398,26 @@ ClusterData* SPKMeans::runSPKMeans()
                 if(cValues[i*k + j] > cValues[i*k + cIndx])
                     cIndx = j;
             }
-            new_partitions[cIndx].push_back(doc_matrix[i]);
+            p_assignments[i] = cIndx;
         }
         ptimer.stop();
         p_time += ptimer.get();
 
         // check if partitions changed since last time
-        findChangedPartitions(new_partitions, data);
-
-        // transfer the new partitions to the partitions array
-        copyPartitions(new_partitions, data);
+//        temp_findChangedPartitions(p_assignments, new_p_assignments);
 
         // compute new concept vectors
         ctimer.start();
         for(int i=0; i<k; i++) {
-            // only update concept vectors if partition has changed
-            if(changed[i]) {
-                delete[] concepts[i];
-                concepts[i] = computeConcept(partitions[i], p_sizes[i]);
-            }
+            delete[] concepts[i];
+            concepts[i] = temp_computeConcept(p_assignments, i);
         }
         ctimer.stop();
         c_time += ctimer.get();
 
         // compute quality of new partitioning
         qtimer.start();
-        float n_quality = computeQ(data);
+        float n_quality = temp_computeQ(p_assignments, concepts);
         dQ = n_quality - quality;
         quality = n_quality;
         qtimer.stop();
@@ -391,6 +432,7 @@ ClusterData* SPKMeans::runSPKMeans()
     timer.stop();
     reportTime(iterations, timer.get(), p_time, c_time, q_time);
 
+    return 0;
     // return the resulting partitions and concepts in the ClusterData struct
     return data;
 }
