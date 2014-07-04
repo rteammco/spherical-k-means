@@ -84,14 +84,9 @@ ClusterData::~ClusterData()
 // Gives document doc a new partition assignment part (these are indices).
 // These partitions are stored in the p_asgns_new array, and NOT the
 // default one. Use swapAssignments to update.
-// This function also automatically updates the partition change values.
 void ClusterData::assignPartition(int doc, int partition)
 {
     p_asgns_new[doc] = partition;
-    if(p_asgns[doc] != partition) {
-        changed[partition] = true;
-        changed[p_asgns[doc]] = true;
-    }
 }
 
 

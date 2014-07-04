@@ -370,15 +370,14 @@ ClusterData* SPKMeans::runSPKMeans()
     bool *changed = data->changed;
     float *cValues = data->cValues;
     float *qualities = data->qualities;
+    int *p_assignments = data->p_asgns;
 
     // init partitions
-    int *p_assignments = new int[dc];
-    int *new_p_assignments = new int[dc];
-    temp_initPartitions(p_assignments);
+    temp_initPartitions(data->p_asgns);
 
     // compute the initial concept vectors
     for(int i=0; i<k; i++)
-        concepts[i] = temp_computeConcept(p_assignments, i);
+        concepts[i] = temp_computeConcept(data->p_asgns, i);
 
     // keep track of all individual component times for analysis
     Galois::Timer ptimer;
@@ -389,7 +388,7 @@ ClusterData* SPKMeans::runSPKMeans()
     float q_time = 0;
 
     // compute initial quality, and cache the quality values
-    float quality = temp_computeQ(p_assignments, concepts);
+    float quality = temp_computeQ(data->p_asgns, concepts);
     
     // do spherical k-means loop
     float dQ = Q_THRESHOLD * 10;
@@ -400,7 +399,7 @@ ClusterData* SPKMeans::runSPKMeans()
         // compute new partitions based on old concept vectors
         ptimer.start();
         for(int i=0; i<dc; i++) {
-            int cIndx = 0;
+            int pIndx = 0;
             // only update cosine similarities if partitions have changed
             // or if optimization is disabled
             if(changed[0])
@@ -408,32 +407,30 @@ ClusterData* SPKMeans::runSPKMeans()
             for(int j=1; j<k; j++) {
                 if(changed[j]) // again, only if changed
                     cValues[i*k + j] = cosineSimilarity(concepts[j], i);
-                if(cValues[i*k + j] > cValues[i*k + cIndx])
-                    cIndx = j;
+                if(cValues[i*k + j] > cValues[i*k + pIndx])
+                    pIndx = j;
             }
-            new_p_assignments[i] = cIndx;
+            data->assignPartition(i, pIndx);
         }
         ptimer.stop();
         p_time += ptimer.get();
 
         // check if partitions changed since last time, then swap pointers
-        temp_findChangedPartitions(p_assignments, new_p_assignments, changed);
-        int *temp = p_assignments;
-        p_assignments = new_p_assignments;
-        new_p_assignments = temp;
+        temp_findChangedPartitions(data->p_asgns, data->p_asgns_new, changed);
+        data->swapAssignments();
 
         // compute new concept vectors
         ctimer.start();
         for(int i=0; i<k; i++) {
             delete[] concepts[i];
-            concepts[i] = temp_computeConcept(p_assignments, i);
+            concepts[i] = temp_computeConcept(data->p_asgns, i);
         }
         ctimer.stop();
         c_time += ctimer.get();
 
         // compute quality of new partitioning
         qtimer.start();
-        float n_quality = temp_computeQ(p_assignments, concepts);
+        float n_quality = temp_computeQ(data->p_asgns, concepts);
         dQ = n_quality - quality;
         quality = n_quality;
         qtimer.stop();
@@ -447,10 +444,6 @@ ClusterData* SPKMeans::runSPKMeans()
     // report runtime statistics
     timer.stop();
     reportTime(iterations, timer.get(), p_time, c_time, q_time);
-
-    // clean memory
-    delete[] p_assignments;
-    delete[] new_p_assignments;
 
     delete data;
     // return the resulting partitions and concepts in the ClusterData struct

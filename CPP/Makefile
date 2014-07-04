@@ -18,7 +18,7 @@ clean:
 
 # Run with a small test file:
 test:
-	./spkmeans -d test.txt --noresults
+	./spkmeans -d ../TestData/documents --autok --noresults
 
 
 # Run with the larger test data set:
