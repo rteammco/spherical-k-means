@@ -451,6 +451,8 @@ ClusterData* SPKMeans::runSPKMeans()
     // clean memory
     delete[] p_assignments;
     delete[] new_p_assignments;
+
+    delete data;
     // return the resulting partitions and concepts in the ClusterData struct
     return 0;
 }

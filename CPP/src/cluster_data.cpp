@@ -22,8 +22,10 @@ ClusterData::ClusterData(int k_, int dc_, int wc_,
     dc = dc_;
     wc = wc_;
 
-    // set partitions pointer
+    // set partitions pointer, and initialize all to 0
     partitions = new float**[k];
+    for(int i=0; i<k; i++)
+        partitions[i] = 0;
 
     // set partition sizes pointer
     p_sizes = new int[k];
@@ -121,7 +123,8 @@ void ClusterData::swapAssignments()
 void ClusterData::clearPartitions()
 {
     for(int i=0; i<k; i++)
-        delete[] partitions[i];
+        if(partitions[i] != 0)
+            delete[] partitions[i];
 }
 
 
@@ -150,11 +153,17 @@ void ClusterData::clearMemory()
         delete[] p_sizes;
         p_sizes = 0;
     }
+
+    // clean up concept vectors
     if(concepts != 0) {
         clearConcepts();
         delete[] concepts;
         concepts = 0;
     }
+
+    // clean up partition assignment arrays (these should never be NULL)
+    delete[] p_asgns;
+    delete[] p_asgns_new;
 
     // clean up change cache arrays
     if(changed != 0) {
