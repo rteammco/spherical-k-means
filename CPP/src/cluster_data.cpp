@@ -172,12 +172,15 @@ void ClusterData::clearMemory()
         concepts = 0;
     }
 
-    // clean up partition assignment arrays (these should never be NULL)
-    delete[] p_asgns;
-    delete[] p_asgns_new;
+    // clean up partition assignment arrays
+    if(p_asgns != 0)
+        delete[] p_asgns;
+    if(p_asgns_new != 0)
+        delete[] p_asgns_new;
 
-    // clean up document priorities array (this should never be NULL either)
-    delete[] doc_priorities;
+    // clean up document priorities array
+    if(doc_priorities != 0)
+        delete[] doc_priorities;
 
     // clean up change cache arrays
     if(changed != 0) {
