@@ -18,10 +18,16 @@ struct ClusterData
     int dc;
     int wc;
 
-    // pointers to partitions and concepts
+    // pointers to partitions (OLD CODE)
     float ***partitions;
     int *p_sizes;
+
+    // pointers to concept vectors and partition assignments (current and new),
+    // and document priorities
+    int *p_asgns;
+    int *p_asgns_new;
     float **concepts;
+    float *doc_priorities;
 
     // pointers to cosine similarities, qualities, and partition change flags
     bool *changed;
@@ -34,7 +40,7 @@ struct ClusterData
     // If pointers to the lists are not provided, new lists will be
     // initialized instead.
     ClusterData(int k_, int dc_, int wc_,
-            float ***ps_ = 0, int *psz_ = 0, float **cvs_ = 0,
+            float **cvs_ = 0, int *p_asgns_ = 0, float *doc_priorities_ = 0,
             bool *changed_ = 0, float *cValues_ = 0, float *qualities_ = 0)
     {
         // set the variables (k, document count, word count)
@@ -43,22 +49,29 @@ struct ClusterData
         wc = wc_;
 
         // set partitions pointer
-        if(ps_ == 0)
-            partitions = new float**[k];
-        else
-            partitions = ps_;
+        partitions = new float**[k];
 
         // set partition sizes pointer
-        if(psz_ == 0)
-            p_sizes = new int[k];
-        else
-            p_sizes = psz_;
+        p_sizes = new int[k];
 
         // set concepts pointer
         if(cvs_ == 0)
             concepts = new float*[k];
         else
             concepts = cvs_;
+
+        // set partition assignment pointers
+        if(p_asgns_ == 0)
+            p_asgns = new int[dc];
+        else
+            p_asgns = p_asgns_;
+        p_asgns_new = new int[dc];
+
+        // set document priorities pointer
+        if(doc_priorities_ == 0)
+            doc_priorities = new float[dc];
+        else
+            doc_priorities = doc_priorities_;
 
         // set changed flag pointer; if newly created, initialize all to true
         if(changed_ == 0) {
@@ -87,6 +100,39 @@ struct ClusterData
     ~ClusterData()
     {
         clearMemory();
+    }
+
+
+    // Gives document doc a new partition assignment part (these are indices).
+    // These partitions are stored in the p_asgns_new array, and NOT the
+    // default one. Use swapAssignments to update.
+    // This function also automatically updates the partition change values.
+    void assignPartition(int doc, int partition)
+    {
+        p_asgns_new[doc] = partition;
+        if(p_asgns[doc] != partition) {
+            changed[partition] = true;
+            changed[p_asgns[doc]] = true;
+        }
+    }
+
+
+    // Assigns a partition to this document (same as assignPartition above),
+    // but also updates the document's priority.
+    void assignPartition(int doc, int partition, float priority)
+    {
+        assignPartition(doc, partition);
+        doc_priorities[doc] = priority;
+    }
+
+
+    // Swaps the p_assignments and new_p_assignments pointers such so that
+    // the new values are updated without needing to manipulate memory.
+    void swapAssignments()
+    {
+        int *temp = p_asgns;
+        p_asgns = p_asgns_new;
+        p_asgns_new = temp;
     }
 
 
