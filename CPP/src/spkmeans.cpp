@@ -339,18 +339,6 @@ float* SPKMeans::temp_computeConcept(int *p_assignments, int indx)
     vec_normalize(concept, wc);
     return concept;
 }
-void SPKMeans::temp_findChangedPartitions(int *old_pa, int *new_pa, bool *changed)
-{
-    for(int i=0; i<k; i++)
-        changed[i] = false;
-    for(int i=0; i<dc; i++) {
-        int partition = new_pa[i];
-        if(old_pa[i] != new_pa[i]) {
-            changed[old_pa[i]] = true;
-            changed[new_pa[i]] = true;
-        }
-    }
-}
 
 // Runs the spherical k-means algorithm on the given sparse matrix D and
 // clusters the data into k partitions. Non-parallel (standard) version.
@@ -364,20 +352,17 @@ ClusterData* SPKMeans::runSPKMeans()
     txnScheme();
 
     // initialize the data arrays; keep track of the arrays locally
-    // TODO - modify for the new approach
     ClusterData *data = new ClusterData(k, dc, wc);
     float **concepts = data->concepts;
     bool *changed = data->changed;
     float *cValues = data->cValues;
     float *qualities = data->qualities;
-    int *p_assignments = data->p_asgns;
 
-    // init partitions
+    // compute initial partitions, concepts, and quality
     temp_initPartitions(data->p_asgns);
-
-    // compute the initial concept vectors
     for(int i=0; i<k; i++)
         concepts[i] = temp_computeConcept(data->p_asgns, i);
+    float quality = temp_computeQ(data->p_asgns, concepts);
 
     // keep track of all individual component times for analysis
     Galois::Timer ptimer;
@@ -387,8 +372,6 @@ ClusterData* SPKMeans::runSPKMeans()
     float c_time = 0;
     float q_time = 0;
 
-    // compute initial quality, and cache the quality values
-    float quality = temp_computeQ(data->p_asgns, concepts);
     
     // do spherical k-means loop
     float dQ = Q_THRESHOLD * 10;
@@ -415,8 +398,8 @@ ClusterData* SPKMeans::runSPKMeans()
         ptimer.stop();
         p_time += ptimer.get();
 
-        // check if partitions changed since last time, then swap pointers
-        temp_findChangedPartitions(data->p_asgns, data->p_asgns_new, changed);
+        // update which partitions changed since last time, then swap pointers
+        data->findChangedPartitions();
         data->swapAssignments();
 
         // compute new concept vectors

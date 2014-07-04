@@ -54,6 +54,9 @@ class ClusterData {
     // Swaps new assignments for the default ones (updates the assignments).
     void swapAssignments();
 
+    // Updates which partitions have been changed since last partitioning.
+    void findChangedPartitions();
+
     // Cleans up partition array. TODO - remove
     void clearPartitions();
 

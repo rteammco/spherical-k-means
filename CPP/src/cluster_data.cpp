@@ -112,6 +112,22 @@ void ClusterData::swapAssignments()
 
 
 
+// Computes which partitions have changed, and assigns the boolean array
+// accordingly.
+void ClusterData::findChangedPartitions()
+{
+    for(int i=0; i<k; i++)
+        changed[i] = false;
+    for(int i=0; i<dc; i++) {
+        if(p_asgns[i] != p_asgns_new[i]) {
+            changed[p_asgns[i]] = true;
+            changed[p_asgns_new[i]] = true;
+        }
+    }
+}
+
+
+
 // Cleans up partition array by deleting the list of document vectors in
 // each partition slot. The vectors themselves are NOT deleted, nor is
 // the actual partition list.
@@ -159,6 +175,9 @@ void ClusterData::clearMemory()
     // clean up partition assignment arrays (these should never be NULL)
     delete[] p_asgns;
     delete[] p_asgns_new;
+
+    // clean up document priorities array (this should never be NULL either)
+    delete[] doc_priorities;
 
     // clean up change cache arrays
     if(changed != 0) {

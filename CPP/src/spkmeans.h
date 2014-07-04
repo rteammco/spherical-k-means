@@ -68,7 +68,6 @@ class SPKMeans {
     void temp_initPartitions(int *p_assignments);
     float temp_computeQ(int *p_assignments, float **concepts);
     float* temp_computeConcept(int *p_assignments, int indx);
-    void temp_findChangedPartitions(int *old_pa, int *new_pa, bool *changed);
 
   public:
     // initialize wc, dc, k, and doc_matrix, and document norms
