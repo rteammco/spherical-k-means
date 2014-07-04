@@ -293,7 +293,7 @@ float* SPKMeans::computeConcept(float **partition, int p_size)
 
 
 /***** TEMP ADDED */
-void SPKMeans::temp_initPartitions(int *p_assignments)
+void SPKMeans::temp_initPartitions(ClusterData *data)
 {
     // choose an initial partitioning, and get first concepts
     int split = floor(dc / k);
@@ -305,32 +305,34 @@ void SPKMeans::temp_initPartitions(int *p_assignments)
             top = dc;
         int p_size = top - base + 1;
         for(int j=0; j<p_size; j++)
-            p_assignments[base-1 + j] = i;
+            data->p_asgns[base-1 + j] = i;
         base = base + split;
     }
 }
-float SPKMeans::temp_computeQ(int *p_assignments, float **concepts)
+float SPKMeans::temp_computeQ(ClusterData *data)
 {
-    float n_quality = 0;
+    float quality = 0;
     for(int i=0; i<k; i++) {
         float sum_p[wc];
         for(int a=0; a<wc; a++)
             sum_p[a] = 0;
-        for(int j=0; j<dc; j++)
-            if(p_assignments[j] == i)
+        for(int j=0; j<dc; j++) {
+            if(data->p_asgns[j] == i) {
                 for(int a=0; a<wc; a++)
                     sum_p[a] += doc_matrix[j][a];
-        n_quality += vec_dot(sum_p, concepts[i], wc);
+            }
+        }
+        quality += vec_dot(sum_p, data->concepts[i], wc);
     }
-    return n_quality;
+    return quality;
 }
-float* SPKMeans::temp_computeConcept(int *p_assignments, int indx)
+float* SPKMeans::temp_computeConcept(ClusterData *data, int pIndx)
 {
     float *concept = new float[wc];
     for(int i=0; i<wc; i++)
         concept[i] = 0;
     for(int j=0; j<dc; j++) { // for each document
-        if(p_assignments[j] == indx) { // if doc in cluster
+        if(data->p_asgns[j] == pIndx) { // if doc in cluster
             for(int i=0; i<wc; i++) // add words to concept
                 concept[i] += doc_matrix[j][i];
         }
@@ -383,10 +385,11 @@ ClusterData* SPKMeans::runSPKMeans()
     float *qualities = data->qualities;
 
     // compute initial partitions, concepts, and quality
-    temp_initPartitions(data->p_asgns);
+    temp_initPartitions(data);
     for(int i=0; i<k; i++)
-        concepts[i] = temp_computeConcept(data->p_asgns, i);
-    float quality = temp_computeQ(data->p_asgns, concepts);
+        concepts[i] = temp_computeConcept(data, i);
+    float quality = temp_computeQ(data);
+    cout << "Initial quality: " << quality << endl;
 
     // keep track of all individual component times for analysis
     Galois::Timer ptimer;
@@ -410,16 +413,18 @@ ClusterData* SPKMeans::runSPKMeans()
 
             // TODO - temp added
             for(int j=0; j<k; j++) {
-                float cnorm = vec_norm(concepts[j], wc); // TODO - same op. for cvs
-                float dnorm = doc_norms[i]; // TODO - we can cache this better too
-                // here is where we save time: compute the dot product!
-                float dotp = 0;
-                for(int a=0; a<(docs[i]->num_nonzero); a++) {
-                    int word = docs[i]->non_zeros[a]->index;
-                    float value = docs[i]->non_zeros[a]->value;
-                    dotp += concepts[j][word] * value;
+                if(changed[0]) {
+                    float cnorm = vec_norm(concepts[j], wc); // TODO - same op. for cvs
+                    float dnorm = doc_norms[i]; // TODO - we can cache this better too
+                    // here is where we save time: compute the dot product!
+                    float dotp = 0;
+                    for(int a=0; a<(docs[i]->num_nonzero); a++) {
+                        int word = docs[i]->non_zeros[a]->index;
+                        float value = docs[i]->non_zeros[a]->value;
+                        dotp += concepts[j][word] * value;
+                    }
+                    cValues[i*k + j] = dotp / (cnorm * dnorm);
                 }
-                cValues[i*k + j] = dotp / (cnorm * dnorm);
                 if(cValues[i*k + j] > cValues[i*k + pIndx])
                     pIndx = j;
             }
@@ -446,15 +451,17 @@ ClusterData* SPKMeans::runSPKMeans()
         // compute new concept vectors
         ctimer.start();
         for(int i=0; i<k; i++) {
-            delete[] concepts[i];
-            concepts[i] = temp_computeConcept(data->p_asgns, i);
+            if(changed[i]) {
+                delete[] concepts[i];
+                concepts[i] = temp_computeConcept(data, i);
+            }
         }
         ctimer.stop();
         c_time += ctimer.get();
 
         // compute quality of new partitioning
         qtimer.start();
-        float n_quality = temp_computeQ(data->p_asgns, concepts);
+        float n_quality = temp_computeQ(data);
         dQ = n_quality - quality;
         quality = n_quality;
         qtimer.stop();

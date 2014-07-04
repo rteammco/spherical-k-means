@@ -73,9 +73,9 @@ class SPKMeans {
         int num_nonzero;
         temp_ValueIndex** non_zeros;
     };
-    void temp_initPartitions(int *p_assignments);
-    float temp_computeQ(int *p_assignments, float **concepts);
-    float* temp_computeConcept(int *p_assignments, int indx);
+    void temp_initPartitions(ClusterData *data);
+    float temp_computeQ(ClusterData *data);
+    float* temp_computeConcept(ClusterData *data, int pIndx);
 
   public:
     // initialize wc, dc, k, and doc_matrix, and document norms
