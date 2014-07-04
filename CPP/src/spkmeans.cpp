@@ -344,6 +344,30 @@ float* SPKMeans::temp_computeConcept(int *p_assignments, int indx)
 // clusters the data into k partitions. Non-parallel (standard) version.
 ClusterData* SPKMeans::runSPKMeans()
 {
+    // TODO - temporary (implement this in reader)
+    // convert document data format!
+    txnScheme();
+    temp_Document* docs[dc];
+    for(int i=0; i<dc; i++) {
+        vector<temp_ValueIndex*> non_zeros;
+        for(int j=0; j<wc; j++) {
+            if(doc_matrix[i][j] > 0) {
+                temp_ValueIndex *vi = new temp_ValueIndex();
+                vi->value = doc_matrix[i][j];
+                vi->index = j;
+                non_zeros.push_back(vi);
+            }
+        }
+        docs[i] = new temp_Document();
+        int num_nz = non_zeros.size();
+        docs[i]->num_nonzero = num_nz;
+        docs[i]->non_zeros = new temp_ValueIndex*[num_nz];
+        for(int j=0; j<num_nz; j++) {
+            temp_ValueIndex *vi = non_zeros[j];
+            docs[i]->non_zeros[j] = non_zeros[j];
+        }
+    }
+
     // keep track of the run time for this algorithm
     Galois::Timer timer;
     timer.start();
@@ -383,16 +407,33 @@ ClusterData* SPKMeans::runSPKMeans()
         ptimer.start();
         for(int i=0; i<dc; i++) {
             int pIndx = 0;
+
+            // TODO - temp added
+            for(int j=0; j<k; j++) {
+                float cnorm = vec_norm(concepts[j], wc); // TODO - same op. for cvs
+                float dnorm = doc_norms[i]; // TODO - we can cache this better too
+                // here is where we save time: compute the dot product!
+                float dotp = 0;
+                for(int a=0; a<(docs[i]->num_nonzero); a++) {
+                    int word = docs[i]->non_zeros[a]->index;
+                    float value = docs[i]->non_zeros[a]->value;
+                    dotp += concepts[j][word] * value;
+                }
+                cValues[i*k + j] = dotp / (cnorm * dnorm);
+                if(cValues[i*k + j] > cValues[i*k + pIndx])
+                    pIndx = j;
+            }
+
             // only update cosine similarities if partitions have changed
             // or if optimization is disabled
-            if(changed[0])
+            /*if(changed[0])
                 cValues[i*k] = cosineSimilarity(concepts[0], i);
             for(int j=1; j<k; j++) {
                 if(changed[j]) // again, only if changed
                     cValues[i*k + j] = cosineSimilarity(concepts[j], i);
                 if(cValues[i*k + j] > cValues[i*k + pIndx])
                     pIndx = j;
-            }
+            }*/
             data->assignPartition(i, pIndx);
         }
         ptimer.stop();
