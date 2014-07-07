@@ -255,22 +255,6 @@ ClusterData* SPKMeans::runSPKMeans()
     Galois::Timer timer;
     timer.start();
 
-    // apply the TXN scheme on the document vectors (normalize them)
-    txnScheme();
-
-    // initialize the data arrays; keep track of the arrays locally
-    ClusterData *data = new ClusterData(k, dc, wc);
-    float **concepts = data->concepts;
-    bool *changed = data->changed;
-    float *cValues = data->cValues;
-    float *qualities = data->qualities;
-
-    // compute initial partitions, concepts, and quality
-    initPartitions(data);
-    float quality = computeQ(data);
-    cout << "Initial quality: " << quality << endl;
-
-
     // keep track of all individual component times for analysis
     Galois::Timer ptimer;
     Galois::Timer ctimer;
@@ -279,7 +263,21 @@ ClusterData* SPKMeans::runSPKMeans()
     float c_time = 0;
     float q_time = 0;
 
+    // apply the TXN scheme on the document vectors (normalize them)
+    txnScheme();
+
+    // initialize the data arrays; keep track of the arrays locally
+    ClusterData *data = new ClusterData(k, dc, wc);
+    float **concepts = data->concepts;
+    bool *changed = data->changed;
+    float *cValues = data->cValues;
+
+    // compute initial partitions, concepts, and quality
+    initPartitions(data);
+    float quality = computeQ(data);
+    cout << "Initial quality: " << quality << endl;
     
+
     // do spherical k-means loop
     float dQ = Q_THRESHOLD * 10;
     int iterations = 0;
@@ -330,7 +328,8 @@ ClusterData* SPKMeans::runSPKMeans()
         p_time += ptimer.get();
 
         // update which partitions changed since last time, then swap pointers
-        data->findChangedPartitions();
+        if(optimize)
+            data->findChangedPartitions();
         data->swapAssignments();
 
         // compute new concept vectors

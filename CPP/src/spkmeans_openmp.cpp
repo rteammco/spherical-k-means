@@ -68,6 +68,14 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     Galois::Timer timer;
     timer.start();
 
+    // keep track of all individual component times for analysis
+    Galois::Timer ptimer;
+    Galois::Timer ctimer;
+    Galois::Timer qtimer;
+    float p_time = 0;
+    float c_time = 0;
+    float q_time = 0;
+
     // apply the TXN scheme on the document vectors (normalize them)
     txnScheme();
 
@@ -82,15 +90,6 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     initPartitions(data);
     float quality = computeQ(data);
     cout << "Initial quality: " << quality << endl;
-
-
-    // keep track of all individual component times for analysis
-    Galois::Timer ptimer;
-    Galois::Timer ctimer;
-    Galois::Timer qtimer;
-    float p_time = 0;
-    float c_time = 0;
-    float q_time = 0;
 
 
     // do spherical k-means loop
