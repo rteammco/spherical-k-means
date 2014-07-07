@@ -303,54 +303,17 @@ ClusterData* SPKMeans::runSPKMeans()
         // compute new partitions based on old concept vectors
         ptimer.start();
         for(int i=0; i<dc; i++) {
-            /*// TODO - temp added
-            int pIndx = 0;
-            float temp = 0;
-            for(int j=0; j<k; j++) {
-                if(changed[0]) {
-                    float cnorm = vec_norm(concepts[j], wc); // TODO - same op. for cvs
-                    float dnorm = doc_norms[i]; // TODO - we can cache this better too
-                    // here is where we save time: compute the dot product!
-                    float dotp = 0;
-                    for(int a=0; a<(docs[i]->num_nonzero); a++) {
-                        int word = docs[i]->non_zeros[a]->index;
-                        float value = docs[i]->non_zeros[a]->value;
-                        dotp += concepts[j][word] * value;
-                    }
-                    cValues[i*k + j] = dotp / (cnorm * dnorm);
-                }
-                if(cValues[i*k + j] > cValues[i*k + pIndx]) {
-                    pIndx = j;
-                    temp = cValues[i*k + j];
-                }
-            }*/
-
             // only update cosine similarities if partitions have changed
             // or if optimization is disabled
             int pIndx = 0;
-            int pIndx2 = 0; // TODO - remove
-            float cValues2[k*dc];
-            cValues2[i*k] = temp_cosineSimilarity(concepts[0], i, docs[i]);
             if(changed[0])
-                cValues[i*k] = cosineSimilarity(concepts[0], i);
+                cValues[i*k] = temp_cosineSimilarity(concepts[0], i, docs[i]);
             for(int j=1; j<k; j++) {
                 if(changed[j]) // again, only if changed
-                    cValues[i*k + j] = cosineSimilarity(concepts[j], i);
+                    cValues[i*k + j] = temp_cosineSimilarity(concepts[j], i, docs[i]);
                 if(cValues[i*k + j] > cValues[i*k + pIndx])
                     pIndx = j;
-                // ------ TODO - debug (remove)!
-                float c1 = cosineSimilarity(concepts[j], i);
-                float c2 = temp_cosineSimilarity(concepts[j], i, docs[i]);
-                cValues2[i*k + j] = c2;
-                float diff = abs(c1 - c2);
-                if(diff > 0.000001)
-                    cout << "Fail: " << diff << endl;
-                if(cValues2[i*k+j] > cValues[i*k + pIndx2])
-                    pIndx2 = j;
-                // ----------------------------
             }
-            if(pIndx != pIndx2) // TODO - debug! (remove this if)
-                cout << "Mismatched pIndex" << endl;
             data->assignPartition(i, pIndx);
         }
         ptimer.stop();
