@@ -297,52 +297,6 @@ float* SPKMeans::computeConcept(float **partition, int p_size)
 
 
 /***** TEMP ADDED */
-void debug_computeConcept(ClusterData *d1, ClusterData *d2, int pIndx,
-                            int wc, int dc, float **d)
-{
-    float *c1 = new float[wc];
-    for(int i=0; i<wc; i++)
-        c1[i] = 0;
-    float *c2 = vec_sum(d2->partitions[pIndx], wc, d2->p_sizes[pIndx]);
-    for(int i=0; i<dc; i++) { // for each document
-        if(d1->p_asgns[i] == pIndx) { // if doc in cluster
-            for(int j=0; j<wc; j++) { // add words to concept
-                c1[j] += d[i][j];
-            }
-        }
-    }
-    float sum2 = 0;
-    for(int i=0; i<(d2->p_sizes[pIndx]); i++) {
-        sum2 += d2->partitions[pIndx][i][2];
-    }
-
-    double *sum = new double[wc];
-    double sum3 = 0;
-    for(int i=0; i<wc; i++) {
-        sum[i] = 0;
-        for(int j=0; j<(d2->p_sizes[pIndx]); j++) {
-            sum[i] += d2->partitions[pIndx][j][i];
-            if(i == 2) {
-                sum3 += d2->partitions[pIndx][j][i];
-///                if(d2->partitions[pIndx][j][i] == 0)
-//                cout << " --- " << j << ": " << abs(sum3 - sum[i]) << endl;
-            }
-        }
-    }
-    double sum4 = sum[2];
-
-    for(int i=0; i<3; i++) {
-        if(c1[i] != c2[i]) {
-            cout << sum2 << " / " << abs(c1[i] - sum2) << ", " << abs(c2[i] - sum2) << endl;
-            cout << sum3 << " / " << abs(c1[i] - sum3) << ", " << abs(c2[i] - sum3) << endl;
-            cout << sum4 << " / " << abs(c1[i] - sum4) << ", " << abs(c2[i] - sum4) << endl;
-            float diff = abs(c1[i] - c2[i]);
-            cout << "Wrong @ word " << i << endl;
-            cout << "      " << c1[i] << ", " << c2[i]
-                 << " (diff = " << diff << ")" << endl;
-        }
-    }
-}
 float* SPKMeans::temp_computeConcept(ClusterData *data, int pIndx)
 {
     float *concept = new float[wc];
