@@ -72,8 +72,7 @@ class SPKMeans {
     struct temp_Document {
         int num_nonzero;
         temp_ValueIndex** non_zeros;
-    };
-    float* temp_computeConcept(ClusterData *data, int pIndx);
+    }; /****************/
 
   public:
     // initialize wc, dc, k, and doc_matrix, and document norms
@@ -90,7 +89,7 @@ class SPKMeans {
 
     // spkmeans computation functions made public for binding to Galois structs
     float cosineSimilarity(float *cv, int doc_index);
-    float* computeConcept(float **partition, int p_size);
+    float* computeConcept(ClusterData *data, int pIndx);
 
     // the algorithm is implemented differently by each type of paradigm
     virtual ClusterData* runSPKMeans();

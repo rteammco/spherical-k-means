@@ -145,7 +145,7 @@ void SPKMeans::initPartitions(ClusterData *data)
 
     // compute the initial concept vectors
     for(int i=0; i<k; i++)
-        data->concepts[i] = temp_computeConcept(data, i);
+        data->concepts[i] = computeConcept(data, i);
 }
 
 
@@ -284,34 +284,31 @@ void SPKMeans::copyPartitions(vector<float*> *new_partitions,
 
 
 
-// Computes the concept vector of the given partition. A partition is an array
-// of document vectors, and the concept vector will be allocated and populated.
-float* SPKMeans::computeConcept(float **partition, int p_size)
+// Computes the concept vector of the given partition (by index). The
+// partition documents are accessed using the ClusterData struct, and the
+// associated concept vector will be allocated and populated.
+float* SPKMeans::computeConcept(ClusterData *data, int pIndx)
 {
-    float *cv = vec_sum(partition, wc, p_size);
-    vec_divide(cv, wc, wc);
-    vec_normalize(cv, wc);
-    return cv;
-}
-
-
-
-/***** TEMP ADDED */
-float* SPKMeans::temp_computeConcept(ClusterData *data, int pIndx)
-{
+    // create the concept vector and initialize it to 0
     float *concept = new float[wc];
     for(int i=0; i<wc; i++)
         concept[i] = 0;
+
+    // find documents associated w/ this partition, and sum them
     for(int i=0; i<dc; i++) { // for each document
         if(data->p_asgns[i] == pIndx) { // if doc in cluster
             for(int j=0; j<wc; j++) // add words to concept
                 concept[j] += doc_matrix[i][j];
         }
     }
+
+    // normalize the concept vector and return it
     vec_divide(concept, wc, wc);
     vec_normalize(concept, wc);
     return concept;
 }
+
+
 
 // Runs the spherical k-means algorithm on the given sparse matrix D and
 // clusters the data into k partitions. Non-parallel (standard) version.
@@ -428,7 +425,7 @@ ClusterData* SPKMeans::runSPKMeans()
         for(int i=0; i<k; i++) {
             if(changed[i]) {
                 delete[] concepts[i];
-                concepts[i] = temp_computeConcept(data, i);
+                concepts[i] = computeConcept(data, i);
             }
         }
         ctimer.stop();

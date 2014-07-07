@@ -142,7 +142,8 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
             // only update concept vectors if partition has changed
             if(changed[i]) {
                 delete[] concepts[i];
-                concepts[i] = computeConcept(partitions[i], p_sizes[i]);
+                // TODO - this function changed and needs re-implementing
+                //concepts[i] = computeConcept(partitions[i], p_sizes[i]);
             }
         }
         ctimer.stop();
