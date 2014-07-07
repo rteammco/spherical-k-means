@@ -457,10 +457,10 @@ ClusterData* SPKMeans::runSPKMeans()
         // compute new partitions based on old concept vectors
         ptimer.start();
         for(int i=0; i<dc; i++) {
+            /*// TODO - temp added
             int pIndx = 0;
-
-            // TODO - temp added
-            /*for(int j=0; j<k; j++) {
+            float temp = 0;
+            for(int j=0; j<k; j++) {
                 if(changed[0]) {
                     float cnorm = vec_norm(concepts[j], wc); // TODO - same op. for cvs
                     float dnorm = doc_norms[i]; // TODO - we can cache this better too
@@ -473,21 +473,26 @@ ClusterData* SPKMeans::runSPKMeans()
                     }
                     cValues[i*k + j] = dotp / (cnorm * dnorm);
                 }
-                if(cValues[i*k + j] > cValues[i*k + pIndx])
+                if(cValues[i*k + j] > cValues[i*k + pIndx]) {
                     pIndx = j;
+                    temp = cValues[i*k + j];
+                }
             }*/
 
             // only update cosine similarities if partitions have changed
             // or if optimization is disabled
+            int pIndx2 = 0;
             if(changed[0])
                 cValues[i*k] = cosineSimilarity(concepts[0], i);
             for(int j=1; j<k; j++) {
                 if(changed[j]) // again, only if changed
                     cValues[i*k + j] = cosineSimilarity(concepts[j], i);
-                if(cValues[i*k + j] > cValues[i*k + pIndx])
-                    pIndx = j;
+                if(cValues[i*k + j] > cValues[i*k + pIndx2])
+                    pIndx2 = j;
             }
-            data->assignPartition(i, pIndx);
+            //if(pIndx != pIndx2)
+            //    cout << "ERROR: FAIL: " << cValues[i*k + pIndx2] << " vs. " << temp << endl;
+            data->assignPartition(i, pIndx2);
         }
         ptimer.stop();
         p_time += ptimer.get();
