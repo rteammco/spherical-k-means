@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <vector> // TODO - debug
 
 #include "Galois/Timer.h"
 
@@ -326,15 +327,61 @@ float SPKMeans::temp_computeQ(ClusterData *data)
     }
     return quality;
 }
+void debug_computeConcept(ClusterData *d1, ClusterData *d2, int pIndx,
+                            int wc, int dc, float **d)
+{
+    float *c1 = new float[wc];
+    for(int i=0; i<wc; i++)
+        c1[i] = 0;
+    float *c2 = vec_sum(d2->partitions[pIndx], wc, d2->p_sizes[pIndx]);
+    for(int i=0; i<dc; i++) { // for each document
+        if(d1->p_asgns[i] == pIndx) { // if doc in cluster
+            for(int j=0; j<wc; j++) { // add words to concept
+                c1[j] += d[i][j];
+            }
+        }
+    }
+    float sum2 = 0;
+    for(int i=0; i<(d2->p_sizes[pIndx]); i++) {
+        sum2 += d2->partitions[pIndx][i][2];
+    }
+
+    double *sum = new double[wc];
+    double sum3 = 0;
+    for(int i=0; i<wc; i++) {
+        sum[i] = 0;
+        for(int j=0; j<(d2->p_sizes[pIndx]); j++) {
+            sum[i] += d2->partitions[pIndx][j][i];
+            if(i == 2) {
+                sum3 += d2->partitions[pIndx][j][i];
+///                if(d2->partitions[pIndx][j][i] == 0)
+//                cout << " --- " << j << ": " << abs(sum3 - sum[i]) << endl;
+            }
+        }
+    }
+    double sum4 = sum[2];
+
+    for(int i=0; i<3; i++) {
+        if(c1[i] != c2[i]) {
+            cout << sum2 << " / " << abs(c1[i] - sum2) << ", " << abs(c2[i] - sum2) << endl;
+            cout << sum3 << " / " << abs(c1[i] - sum3) << ", " << abs(c2[i] - sum3) << endl;
+            cout << sum4 << " / " << abs(c1[i] - sum4) << ", " << abs(c2[i] - sum4) << endl;
+            float diff = abs(c1[i] - c2[i]);
+            cout << "Wrong @ word " << i << endl;
+            cout << "      " << c1[i] << ", " << c2[i]
+                 << " (diff = " << diff << ")" << endl;
+        }
+    }
+}
 float* SPKMeans::temp_computeConcept(ClusterData *data, int pIndx)
 {
     float *concept = new float[wc];
     for(int i=0; i<wc; i++)
         concept[i] = 0;
-    for(int j=0; j<dc; j++) { // for each document
-        if(data->p_asgns[j] == pIndx) { // if doc in cluster
-            for(int i=0; i<wc; i++) // add words to concept
-                concept[i] += doc_matrix[j][i];
+    for(int i=0; i<dc; i++) { // for each document
+        if(data->p_asgns[i] == pIndx) { // if doc in cluster
+            for(int j=0; j<wc; j++) // add words to concept
+                concept[j] += doc_matrix[i][j];
         }
     }
     vec_divide(concept, wc, wc);
@@ -391,6 +438,115 @@ ClusterData* SPKMeans::runSPKMeans()
     float quality = temp_computeQ(data);
     cout << "Initial quality: " << quality << endl;
 
+
+    // TODO - remove (compare for testing purposes)
+    /**************************************************************************/
+    ClusterData *d2 = new ClusterData(k, dc, wc);
+    initPartitions(d2);
+    debug_computeConcept(data, d2, 0, wc, dc, doc_matrix);
+    return 0;
+    for(int i=0; i<k; i++)
+        d2->concepts[i] = computeConcept(d2->partitions[i], d2->p_sizes[i]);
+    float q2 = computeQ(d2);
+    cout << "Initial quality (2): " << q2 << endl;
+    // check if partitioning is identical
+    for(int i=0; i<k; i++) {
+        // find all documents assigned to partition i
+        vector<int> v1;
+        for(int j=0; j<dc; j++) {
+            if(data->p_asgns[j] == i)
+                v1.push_back(j);
+        }
+        // find matching partition
+        for(int j=0; j<k; j++) {
+            vector<int> v2;
+            for(int a=0; a<(d2->p_sizes[j]); a++) {
+                for(int b=0; b<dc; b++) {
+                    if(d2->partitions[j][a] == doc_matrix[b])
+                        v2.push_back(b);
+                }
+            }
+            bool match = false;
+            if(v1.size() == v2.size()){
+                match = true;
+                for(int a=0; a<v1.size(); a++) {
+                    if(find(v2.begin(), v2.end(), v1[a]) == v2.end()) {
+                        match = false;
+                        break;
+                    }
+                }
+            }
+            if(match) {
+                cout << "Matching partition for " << i << " found!" << endl;
+                break;
+            }
+        }
+    }
+    // check if partitions are unique
+    for(int i=0; i<k; i++) {
+        vector<int> v1;
+        for(int j=0; j<(d2->p_sizes[i]); j++)
+            v1.push_back(int(d2->partitions[i][j]));
+        for(int j=0; j<k; j++) {
+            if(j == i) continue;
+            vector<int> v2;
+            for(int a=0; a<(d2->p_sizes[j]); a++) {
+                for(int b=0; b<v1.size(); b++) {
+                    if(v1[b] == int(d2->partitions[j][a]))
+                        cout << "UNIQUENESS ERROR!" << endl;
+                }
+            }
+        }
+    }
+    // check if concepts are identical
+    for(int i=0; i<k; i++) {
+        bool same = false;
+        for(int j=0; j<k; j++) {
+            bool this_same = true;
+            for(int a=0; a<wc; a++) {
+                if(concepts[i][a] != d2->concepts[j][a]) {
+                    float diff = abs(concepts[i][a] - d2->concepts[j][a]);
+                    if(diff < 0.000001) {
+                        cout << endl;
+                        cout << "CV " << i << " - diff: " << concepts[i][a]
+                             << " vs. " << d2->concepts[j][a]
+                             << " [" << diff << "]" << endl;
+                        cout << "    Mismatch at word " << a << endl;
+                    }
+                    this_same = false;
+                    break;
+                }
+            }
+            if(this_same) {
+                same = true;
+                break;
+            }
+        }
+        if(!same)
+            cout << "Cluster " << i << " has a different CV" << endl;
+    }
+    for(int i=0; i<dc; i++) {
+        bool found = false;
+        for(int j=0; j<k; j++) {
+            for(int a=0; a<(d2->p_sizes[j]); a++) {
+                if (d2->partitions[j][a] == doc_matrix[i]) {
+                    found = true;
+                    for(int b=0; b<wc; b++) {
+                        if(doc_matrix[i][b] != d2->partitions[j][a][b])
+                            cout << "MISMATCH: " << doc_matrix[i][b]
+                                 << " vs. " << d2->partitions[j][a][b] << endl;
+                    }
+                }
+            }
+        }
+        if(!found)
+            cout << "ERROR: The document wasn't even found. " << endl;
+    }
+    delete d2;
+    return 0;
+    /**************************************************************************/
+
+
     // keep track of all individual component times for analysis
     Galois::Timer ptimer;
     Galois::Timer ctimer;
@@ -412,7 +568,7 @@ ClusterData* SPKMeans::runSPKMeans()
             int pIndx = 0;
 
             // TODO - temp added
-            for(int j=0; j<k; j++) {
+            /*for(int j=0; j<k; j++) {
                 if(changed[0]) {
                     float cnorm = vec_norm(concepts[j], wc); // TODO - same op. for cvs
                     float dnorm = doc_norms[i]; // TODO - we can cache this better too
@@ -427,18 +583,18 @@ ClusterData* SPKMeans::runSPKMeans()
                 }
                 if(cValues[i*k + j] > cValues[i*k + pIndx])
                     pIndx = j;
-            }
+            }*/
 
             // only update cosine similarities if partitions have changed
             // or if optimization is disabled
-            /*if(changed[0])
+            if(changed[0])
                 cValues[i*k] = cosineSimilarity(concepts[0], i);
             for(int j=1; j<k; j++) {
                 if(changed[j]) // again, only if changed
                     cValues[i*k + j] = cosineSimilarity(concepts[j], i);
                 if(cValues[i*k + j] > cValues[i*k + pIndx])
                     pIndx = j;
-            }*/
+            }
             data->assignPartition(i, pIndx);
         }
         ptimer.stop();

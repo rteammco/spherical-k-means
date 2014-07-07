@@ -26,10 +26,28 @@ run:
 	./spkmeans -d ../TestData/documents --auto --noresults --galois
 
 
-# Compare two versions
+# Compare two versions with small dataset
 COMMAND = -d ../TestData/documents --auto --noresults
 comp:
 	./spkmeans $(COMMAND); ./spkmeans2 $(COMMAND)
+
+
+# Compare two versions w/ big dataset
+COMMAND2 = -d ../TestData/classic3 --auto --noresults --noscheme
+comp2:
+	./spkmeans $(COMMAND2); ./spkmeans2 $(COMMAND2)
+
+
+# Compare two versions w/ bigger dataset
+COMMAND3 = -d ../TestData/mat -k 50 --noresults --noscheme
+comp3:
+	./spkmeans $(COMMAND3); ./spkmeans2 $(COMMAND3)
+
+
+# Compare two versions w/ biggest dataset
+COMMAND4 = -d ../TestData/news20 -k 10 --noresults
+comp4:
+	./spkmeans $(COMMAND4); ./spkmeans2 $(COMMAND4)
 
 
 # Debug with GDB (running on larger test data set):
