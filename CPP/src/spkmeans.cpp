@@ -150,18 +150,6 @@ void SPKMeans::initPartitions(ClusterData *data)
 
 
 
-// Returns the quality of the given partition by doing a dot product against
-// its given concept vector.
-float SPKMeans::computeQ(float **partition, int p_size, float *concept)
-{
-    float *sum_p = vec_sum(partition, wc, p_size);
-    float quality = vec_dot(sum_p, concept, wc);
-    delete[] sum_p;
-    return quality;
-}
-
-
-
 // Returns the total quality of all partitions by summing the qualities of
 // each individual partition. If optimization is enabled, uses cached values
 // whenever possible.
@@ -169,6 +157,8 @@ float SPKMeans::computeQ(ClusterData *data)
 {
     float quality = 0;
 
+    // NOTE - there was a single-partition computeQ function,
+    //        re-implement or not?
     for(int i=0; i<k; i++) {
         if(data->changed[i]) {
             // initialize sum vector to 0
@@ -202,83 +192,6 @@ float SPKMeans::cosineSimilarity(float *cv, int doc_index)
     else {
         return vec_dot(doc_matrix[doc_index], cv, wc) /
             (doc_norms[doc_index] * vec_norm(cv, wc));
-    }
-}
-
-
-
-// Determines which partitions have changed between the old partitioning
-// (in the ClusterData array) and the new partitions (in the given vector).
-// Sets the ClusterData::changed values acoordingly.
-// For parallel implementations, this needs to be adjusted to be order-
-// invariant. This code assumes documents were inserted into partitions in
-// order of their indices.
-void SPKMeans::findChangedPartitions(vector<float*> *new_partitions,
-    ClusterData *data)
-{
-    if(optimize) { // skip if not optimizing
-        for(int i=0; i<(data->k); i++) {
-            if(data->p_sizes[i] == new_partitions[i].size()) {
-                data->changed[i] = false;
-                // only check forward direction: documents were inserted
-                // in order by index
-                for(int j=0; j<(data->p_sizes[i]); j++) {
-                    if(data->partitions[i][j] != new_partitions[i][j]) {
-                        data->changed[i] = true;
-                        break;
-                    }
-                }
-            }
-            else
-                data->changed[i] = true;
-        }
-    }
-}
-
-
-
-// Same as findChangedPartitions, but without the assumption that the new
-// partitions were computed in order. Use this version when computing the
-// partitions in parallel or when unsure what the order of computation was.
-void SPKMeans::findChangedPartitionsUnordered(vector<float*> *new_partitions,
-    ClusterData *data)
-{
-    if(optimize) { // skip if not optimizing
-        for(int i=0; i<(data->k); i++) {
-            // for each partition, check if new and old are same size
-            if(data->p_sizes[i] == new_partitions[i].size()) {
-                data->changed[i] = false;
-                // for each document in old partition
-                for(int j=0; j<(data->p_sizes[i]); j++) {
-                    // check if document is in new partition (we need
-                    // std::find here because order is not guaranteed due
-                    // to the parallelization)
-                    if(find(new_partitions[i].begin(),
-                            new_partitions[i].end(),
-                            data->partitions[i][j]) == new_partitions[i].end())
-                    {
-                        data->changed[i] = true;
-                        break;
-                    }
-                }
-            }
-            else
-                data->changed[i] = true;
-        }
-    }
-}
-
-
-
-// Clears the partitions in the ClusterData struct, and copies the new
-// partitions (and size information) over from the given vector.
-void SPKMeans::copyPartitions(vector<float*> *new_partitions,
-    ClusterData *data)
-{
-    data->clearPartitions();
-    for(int i=0; i<(data->k); i++) {
-        data->p_sizes[i] = new_partitions[i].size();
-        data->partitions[i] = new_partitions[i].data();
     }
 }
 

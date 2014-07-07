@@ -45,17 +45,8 @@ class SPKMeans {
     // initial partition setup
     void initPartitions(ClusterData *data);
 
-    // quality computation functions
-    float computeQ(float **partition, int p_size, float *concept);
+    // compute quality of partitioning
     float computeQ(ClusterData *data);
-
-    // spkmeans algorithm computation functions
-    void findChangedPartitions(std::vector<float*> *new_partitions,
-                               ClusterData *data);
-    void findChangedPartitionsUnordered(std::vector<float*> *new_partitions,
-                                        ClusterData *data);
-    void copyPartitions(std::vector<float*> *new_partitions,
-                        ClusterData *data);
 
     // report current partition quality
     void reportQuality(ClusterData *data, float quality, float dQ);
