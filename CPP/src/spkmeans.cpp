@@ -129,7 +129,7 @@ void SPKMeans::txnScheme()
 // a starting point for the clustering algorithm.
 void SPKMeans::initPartitions(ClusterData *data)
 {
-    // create the first arbitrary partitioning
+    // choose an initial partitioning
     int split = floor(dc / k);
     cout << "Split = " << split << endl;
     int base = 1;
@@ -137,23 +137,15 @@ void SPKMeans::initPartitions(ClusterData *data)
         int top = base + split - 1;
         if(i == k-1)
             top = dc;
-
         int p_size = top - base + 1;
-        data->p_sizes[i] = p_size;
-        //cout << "Created new partition of size " << p_size << endl;
-
-        data->partitions[i] = new float*[p_size];
         for(int j=0; j<p_size; j++)
-            data->partitions[i][j] = doc_matrix[base + j - 1];
-
+            data->p_asgns[base-1 + j] = i;
         base = base + split;
     }
 
     // compute the initial concept vectors
-    for(int i=0; i<k; i++) {
-        data->concepts[i] =
-            computeConcept(data->partitions[i], data->p_sizes[i]);
-    }
+    for(int i=0; i<k; i++)
+        data->concepts[i] = temp_computeConcept(data, i);
 }
 
 
@@ -305,22 +297,6 @@ float* SPKMeans::computeConcept(float **partition, int p_size)
 
 
 /***** TEMP ADDED */
-void SPKMeans::temp_initPartitions(ClusterData *data)
-{
-    // choose an initial partitioning, and get first concepts
-    int split = floor(dc / k);
-    cout << "Split = " << split << endl;
-    int base = 1;
-    for(int i=0; i<k; i++) {
-        int top = base + split - 1;
-        if(i == k-1)
-            top = dc;
-        int p_size = top - base + 1;
-        for(int j=0; j<p_size; j++)
-            data->p_asgns[base-1 + j] = i;
-        base = base + split;
-    }
-}
 void debug_computeConcept(ClusterData *d1, ClusterData *d2, int pIndx,
                             int wc, int dc, float **d)
 {
@@ -426,9 +402,7 @@ ClusterData* SPKMeans::runSPKMeans()
     float *qualities = data->qualities;
 
     // compute initial partitions, concepts, and quality
-    temp_initPartitions(data);
-    for(int i=0; i<k; i++)
-        concepts[i] = temp_computeConcept(data, i);
+    initPartitions(data);
     float quality = computeQ(data);
     cout << "Initial quality: " << quality << endl;
 

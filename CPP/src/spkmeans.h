@@ -73,7 +73,6 @@ class SPKMeans {
         int num_nonzero;
         temp_ValueIndex** non_zeros;
     };
-    void temp_initPartitions(ClusterData *data);
     float* temp_computeConcept(ClusterData *data, int pIndx);
 
   public:
