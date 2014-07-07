@@ -63,7 +63,9 @@ class SPKMeans {
     struct temp_Document {
         int num_nonzero;
         temp_ValueIndex** non_zeros;
-    }; /****************/
+    };
+    float temp_cosineSimilarity(float *cv, int doc_index, temp_Document *doc);
+    /******************/
 
   public:
     // initialize wc, dc, k, and doc_matrix, and document norms

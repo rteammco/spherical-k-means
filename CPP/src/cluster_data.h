@@ -20,7 +20,7 @@ class ClusterData {
     int dc;
     int wc;
 
-    // pointers to partitions (OLD CODE) TODO - remove
+    // TODO - remove this
     float ***partitions;
     int *p_sizes;
 

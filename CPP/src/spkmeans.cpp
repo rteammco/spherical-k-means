@@ -183,6 +183,22 @@ float SPKMeans::computeQ(ClusterData *data)
 
 
 // Computes the cosine similarity value of the two given vectors (dv and cv).
+float SPKMeans::temp_cosineSimilarity(float *cv, int doc_index, temp_Document *doc)
+{
+    float cnorm = vec_norm(cv, wc); // TODO - same optimization for cvs
+    float dnorm = doc_norms[doc_index]; // TODO - can we cache this better too?
+
+    // here is where we save time: compute the dot product!
+    float dotp = 0;
+    for(int a=0; a<(doc->num_nonzero); a++) {
+        int word = doc->non_zeros[a]->index;
+        float value = doc->non_zeros[a]->value;
+        dotp += cv[word] * value;
+    }
+    
+    //dotp = vec_dot(doc_matrix[doc_index], cv, wc);
+    return dotp / (dnorm * cnorm);
+}
 float SPKMeans::cosineSimilarity(float *cv, int doc_index)
 {
     if(!optimize) { // if optimization is off, don't use caching
@@ -311,18 +327,31 @@ ClusterData* SPKMeans::runSPKMeans()
 
             // only update cosine similarities if partitions have changed
             // or if optimization is disabled
-            int pIndx2 = 0;
+            int pIndx = 0;
+            int pIndx2 = 0; // TODO - remove
+            float cValues2[k*dc];
+            cValues2[i*k] = temp_cosineSimilarity(concepts[0], i, docs[i]);
             if(changed[0])
                 cValues[i*k] = cosineSimilarity(concepts[0], i);
             for(int j=1; j<k; j++) {
                 if(changed[j]) // again, only if changed
                     cValues[i*k + j] = cosineSimilarity(concepts[j], i);
-                if(cValues[i*k + j] > cValues[i*k + pIndx2])
+                if(cValues[i*k + j] > cValues[i*k + pIndx])
+                    pIndx = j;
+                // ------ TODO - debug (remove)!
+                float c1 = cosineSimilarity(concepts[j], i);
+                float c2 = temp_cosineSimilarity(concepts[j], i, docs[i]);
+                cValues2[i*k + j] = c2;
+                float diff = abs(c1 - c2);
+                if(diff > 0.000001)
+                    cout << "Fail: " << diff << endl;
+                if(cValues2[i*k+j] > cValues[i*k + pIndx2])
                     pIndx2 = j;
+                // ----------------------------
             }
-            //if(pIndx != pIndx2)
-            //    cout << "ERROR: FAIL: " << cValues[i*k + pIndx2] << " vs. " << temp << endl;
-            data->assignPartition(i, pIndx2);
+            if(pIndx != pIndx2) // TODO - debug! (remove this if)
+                cout << "Mismatched pIndex" << endl;
+            data->assignPartition(i, pIndx);
         }
         ptimer.stop();
         p_time += ptimer.get();
