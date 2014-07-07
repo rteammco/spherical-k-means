@@ -176,14 +176,25 @@ float SPKMeans::computeQ(float **partition, int p_size, float *concept)
 float SPKMeans::computeQ(ClusterData *data)
 {
     float quality = 0;
+
     for(int i=0; i<k; i++) {
         if(data->changed[i]) {
-            data->qualities[i] = computeQ(data->partitions[i],
-                                          data->p_sizes[i],
-                                          data->concepts[i]);
+            // initialize sum vector to 0
+            float sum_p[wc];
+            for(int a=0; a<wc; a++)
+                sum_p[a] = 0;
+            // add all documents associated with this partition
+            for(int j=0; j<dc; j++) {
+                if(data->p_asgns[j] == i) {
+                    for(int a=0; a<wc; a++)
+                        sum_p[a] += doc_matrix[j][a];
+                }
+            }
+            data->qualities[i] = vec_dot(sum_p, data->concepts[i], wc);
         }
         quality += data->qualities[i];
     }
+
     return quality;
 }
 
@@ -310,23 +321,6 @@ void SPKMeans::temp_initPartitions(ClusterData *data)
         base = base + split;
     }
 }
-float SPKMeans::temp_computeQ(ClusterData *data)
-{
-    float quality = 0;
-    for(int i=0; i<k; i++) {
-        float sum_p[wc];
-        for(int a=0; a<wc; a++)
-            sum_p[a] = 0;
-        for(int j=0; j<dc; j++) {
-            if(data->p_asgns[j] == i) {
-                for(int a=0; a<wc; a++)
-                    sum_p[a] += doc_matrix[j][a];
-            }
-        }
-        quality += vec_dot(sum_p, data->concepts[i], wc);
-    }
-    return quality;
-}
 void debug_computeConcept(ClusterData *d1, ClusterData *d2, int pIndx,
                             int wc, int dc, float **d)
 {
@@ -435,7 +429,7 @@ ClusterData* SPKMeans::runSPKMeans()
     temp_initPartitions(data);
     for(int i=0; i<k; i++)
         concepts[i] = temp_computeConcept(data, i);
-    float quality = temp_computeQ(data);
+    float quality = computeQ(data);
     cout << "Initial quality: " << quality << endl;
 
 
@@ -514,7 +508,7 @@ ClusterData* SPKMeans::runSPKMeans()
 
         // compute quality of new partitioning
         qtimer.start();
-        float n_quality = temp_computeQ(data);
+        float n_quality = computeQ(data);
         dQ = n_quality - quality;
         quality = n_quality;
         qtimer.stop();
