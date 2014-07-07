@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
-#include <mutex>
 
 #include <omp.h>
 #include "Galois/Timer.h"
@@ -74,15 +73,16 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
 
     // initialize the data arrays; keep track of the arrays locally
     ClusterData *data = new ClusterData(k, dc, wc);
-    float ***partitions = data->partitions;
-    int *p_sizes = data->p_sizes;
     float **concepts = data->concepts;
     bool *changed = data->changed;
     float *cValues = data->cValues;
     float *qualities = data->qualities;
 
-    // choose an initial partitioning, and get first concepts
+    // compute initial partitions, concepts, and quality
     initPartitions(data);
+    float quality = computeQ(data);
+    cout << "Initial quality: " << quality << endl;
+
 
     // keep track of all individual component times for analysis
     Galois::Timer ptimer;
@@ -92,48 +92,35 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     float c_time = 0;
     float q_time = 0;
 
-    // compute initial quality, and cache the quality values
-    float quality = computeQ(data);
-    cout << "Initial quality: " << quality << endl;
 
     // do spherical k-means loop
     float dQ = Q_THRESHOLD * 10;
     int iterations = 0;
-    mutex mut;
     while(dQ > Q_THRESHOLD) {
         iterations++;
 
         // compute new partitions based on old concept vectors
         ptimer.start();
-        // TODO - new_partitions isn't deleted (memory leak?)
-        vector<float*> *new_partitions = new vector<float*>[k];
-        #pragma omp parallel for
-        for(int i=0; i<k; i++)
-            new_partitions[i] = vector<float*>();
         #pragma omp parallel for
         for(int i=0; i<dc; i++) {
-            int cIndx = 0;
+            int pIndx = 0;
             // only update cosine similarities if partitions have changed
             if(changed[0])
                 cValues[i*k] = cosineSimilarity(concepts[0], i);
             for(int j=1; j<k; j++) {
                 if(changed[j]) // again, only if changed
                     cValues[i*k + j] = cosineSimilarity(concepts[j], i);
-                if(cValues[i*k + j] > cValues[i*k + cIndx])
-                    cIndx = j;
+                if(cValues[i*k + j] > cValues[i*k + pIndx])
+                    pIndx = j;
             }
-            mut.lock();
-            new_partitions[cIndx].push_back(doc_matrix[i]);
-            mut.unlock();
+            data->assignPartition(i, pIndx);
         }
         ptimer.stop();
         p_time += ptimer.get();
 
-        // check if partitions changed since last time
-        findChangedPartitionsUnordered(new_partitions, data);
-
-        // transfer the new partitions to the partitions array
-        copyPartitions(new_partitions, data);
+        // update which partitions changed since last time, then swap pointers
+        data->findChangedPartitions();
+        data->swapAssignments();
 
         // compute new concept vectors
         ctimer.start();
@@ -142,8 +129,7 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
             // only update concept vectors if partition has changed
             if(changed[i]) {
                 delete[] concepts[i];
-                // TODO - this function changed and needs re-implementing
-                //concepts[i] = computeConcept(partitions[i], p_sizes[i]);
+                concepts[i] = computeConcept(data, i);
             }
         }
         ctimer.stop();
