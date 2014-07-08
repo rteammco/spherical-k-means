@@ -80,7 +80,7 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     txnScheme();
 
     // initialize the data arrays; keep track of the arrays locally
-    ClusterData *data = new ClusterData(k, dc, wc);
+    ClusterData *data = new ClusterData(k, dc, wc, doc_matrix);
     float **concepts = data->concepts;
     bool *changed = data->changed;
     float *cValues = data->cValues;

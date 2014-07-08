@@ -248,6 +248,7 @@ ClusterData* SPKMeans::runSPKMeans()
     txnScheme();
     temp_Document* docs[dc];
     for(int i=0; i<dc; i++) {
+        docs[i] = new temp_Document();
         vector<temp_ValueIndex*> non_zeros;
         for(int j=0; j<wc; j++) {
             if(doc_matrix[i][j] > 0) {
@@ -257,7 +258,6 @@ ClusterData* SPKMeans::runSPKMeans()
                 non_zeros.push_back(vi);
             }
         }
-        docs[i] = new temp_Document();
         int num_nz = non_zeros.size();
         docs[i]->num_nonzero = num_nz;
         docs[i]->non_zeros = new temp_ValueIndex*[num_nz];
@@ -283,7 +283,7 @@ ClusterData* SPKMeans::runSPKMeans()
     txnScheme();
 
     // initialize the data arrays; keep track of the arrays locally
-    ClusterData *data = new ClusterData(k, dc, wc);
+    ClusterData *data = new ClusterData(k, dc, wc, doc_matrix);
     float **concepts = data->concepts;
     bool *changed = data->changed;
     float *cValues = data->cValues;

@@ -8,6 +8,24 @@
 #ifndef CLUSTER_DATA_H
 #define CLUSTER_DATA_H
 
+#include <vector>
+
+
+// This struct is used to store a word value and index pair, used by the
+// Document struct to map words.
+struct ValueIndexPair {
+    float value;
+    int index;
+};
+
+
+// This struct maps each document to the value-index pairs of all words
+// associated with it.
+struct Document {
+    int count;
+    std::vector<ValueIndexPair> words;
+};
+
 
 // ClusterData class can contain partition and concept vector pointers, and
 // functions to clean out the memory.
@@ -36,9 +54,12 @@ class ClusterData {
     float *cValues;
     float *qualities;
 
+    // document data structures that map documents to words
+    Document *docs;
+
 
     // Constructor: sets up variables and data structures.
-    ClusterData(int k_, int dc_, int wc_,
+    ClusterData(int k_, int dc_, int wc_, float **doc_matrix,
             float **cvs_ = 0, int *p_asgns_ = 0, float *doc_priorities_ = 0,
             bool *changed_ = 0, float *cValues_ = 0, float *qualities_ = 0);
 

@@ -7,28 +7,48 @@
 
 #include "cluster_data.h"
 
+#include <vector>
 
 
-// Constructor: pass in the three required values (k, wc, dc), and setup
-// the appropriate data structures.
-// If pointers to the lists are not provided, new lists will be
+
+// Constructor: pass in the four required values (k, wc, dc, doc_matrix), and
+// set up the appropriate data structures.
+// If pointers to the optional lists are not provided, new lists will be
 // initialized instead.
-ClusterData::ClusterData(int k_, int dc_, int wc_,
+ClusterData::ClusterData(int k_, int dc_, int wc_, float **doc_matrix,
     float **concepts_, int *p_asgns_, float *doc_priorities_,
     bool *changed_, float *cValues_, float *qualities_)
 {
-    // set the variables (k, document count, word count)
+    // set the size variables (k, document count, word count)
     k = k_;
     dc = dc_;
     wc = wc_;
 
+    // initialize and fill document data structure
+    docs = new Document[dc];
+    for(int i=0; i<dc; i++) {
+        // find all non-zero words in this document
+        Document d;
+        for(int j=0; j<wc; j++) {
+            if(doc_matrix[i][j] > 0) {
+                ValueIndexPair vi;
+                vi.value = doc_matrix[i][j];
+                vi.index = j;
+                d.words.push_back(vi);
+            }
+        }
+        d.count = d.words.size();
+        docs[i] = d;
+    }
+
     // set partitions pointer, and initialize all to 0
+    // TODO - remove ------------------------------
     partitions = new float**[k];
     for(int i=0; i<k; i++)
         partitions[i] = 0;
-
     // set partition sizes pointer
     p_sizes = new int[k];
+    // --------------------------------------------
 
     // set concepts pointer
     if(concepts_== 0)
@@ -154,6 +174,7 @@ void ClusterData::clearConcepts()
 // WARNING: this will turn all data structure pointers to NULL.
 void ClusterData::clearMemory()
 {
+    // TODO - remove ----------------------
     // clean up partition, size, and concept vector arrays
     if(partitions != 0) {
         clearPartitions();
@@ -163,6 +184,13 @@ void ClusterData::clearMemory()
     if(p_sizes != 0) {
         delete[] p_sizes;
         p_sizes = 0;
+    }
+    // ------------------------------------
+
+    // clean up the document data structures
+    if(docs != 0) {
+        delete[] docs;
+        docs = 0;
     }
 
     // clean up concept vectors

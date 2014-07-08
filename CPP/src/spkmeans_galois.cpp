@@ -65,7 +65,7 @@ ClusterData* SPKMeansGalois::runSPKMeans()
     txnScheme();
 
     // initialize the data arrays
-    ClusterData *data = new ClusterData(k, dc, wc);
+    ClusterData *data = new ClusterData(k, dc, wc, doc_matrix);
 
     // choose an initial partitioning, and get first concepts
     initPartitions(data);
