@@ -183,16 +183,16 @@ float SPKMeans::computeQ(ClusterData *data)
 
 
 // Computes the cosine similarity value of the two given vectors (dv and cv).
-float SPKMeans::temp_cosineSimilarity(float *cv, int doc_index, temp_Document *doc)
+float SPKMeans::temp_cosineSimilarity(float *cv, int doc_index, Document &doc)
 {
     float cnorm = vec_norm(cv, wc); // TODO - same optimization for cvs
     float dnorm = doc_norms[doc_index]; // TODO - can we cache this better too?
 
     // here is where we save time: compute the dot product!
     float dotp = 0;
-    for(int a=0; a<(doc->num_nonzero); a++) {
-        int word = doc->non_zeros[a]->index;
-        float value = doc->non_zeros[a]->value;
+    for(int a=0; a<(doc.count); a++) {
+        int word = doc.words[a].index;
+        float value = doc.words[a].value;
         dotp += cv[word] * value;
     }
     
@@ -307,10 +307,10 @@ ClusterData* SPKMeans::runSPKMeans()
             // or if optimization is disabled
             int pIndx = 0;
             if(changed[0])
-                cValues[i*k] = temp_cosineSimilarity(concepts[0], i, docs[i]);
+                cValues[i*k] = temp_cosineSimilarity(concepts[0], i, data->docs[i]);
             for(int j=1; j<k; j++) {
                 if(changed[j]) // again, only if changed
-                    cValues[i*k + j] = temp_cosineSimilarity(concepts[j], i, docs[i]);
+                    cValues[i*k + j] = temp_cosineSimilarity(concepts[j], i, data->docs[i]);
                 if(cValues[i*k + j] > cValues[i*k + pIndx])
                     pIndx = j;
             }

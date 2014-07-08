@@ -64,7 +64,7 @@ class SPKMeans {
         int num_nonzero;
         temp_ValueIndex** non_zeros;
     };
-    float temp_cosineSimilarity(float *cv, int doc_index, temp_Document *doc);
+    float temp_cosineSimilarity(float *cv, int doc_index, Document &doc);
     /******************/
 
   public:
