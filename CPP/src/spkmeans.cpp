@@ -183,32 +183,21 @@ float SPKMeans::computeQ(ClusterData *data)
 
 
 // Computes the cosine similarity value of the two given vectors (dv and cv).
-float SPKMeans::temp_cosineSimilarity(float *cv, int doc_index, Document &doc)
+float SPKMeans::cosineSimilarity(ClusterData *data, int doc_index, int cluster)
 {
-    float cnorm = vec_norm(cv, wc); // TODO - same optimization for cvs
-    float dnorm = doc_norms[doc_index]; // TODO - can we cache this better too?
+    // TODO - same optimization for concepts? can we cache doc norms better?
+    float cnorm = vec_norm(data->concepts[cluster], wc); // segfault??
+    float dnorm = doc_norms[doc_index];
 
     // here is where we save time: compute the dot product!
     float dotp = 0;
-    for(int a=0; a<(doc.count); a++) {
-        int word = doc.words[a].index;
-        float value = doc.words[a].value;
-        dotp += cv[word] * value;
+    for(int i=0; i<(data->docs[doc_index].count); i++) {
+        int word = data->docs[doc_index].words[i].index;
+        float value = data->docs[doc_index].words[i].value;
+        dotp += data->concepts[cluster][word] * value;
     }
     
-    //dotp = vec_dot(doc_matrix[doc_index], cv, wc);
     return dotp / (dnorm * cnorm);
-}
-float SPKMeans::cosineSimilarity(float *cv, int doc_index)
-{
-    if(!optimize) { // if optimization is off, don't use caching
-        return vec_dot(doc_matrix[doc_index], cv, wc) /
-            (vec_norm(doc_matrix[doc_index], wc) * vec_norm(cv, wc));
-    }
-    else {
-        return vec_dot(doc_matrix[doc_index], cv, wc) /
-            (doc_norms[doc_index] * vec_norm(cv, wc));
-    }
 }
 
 
@@ -243,30 +232,6 @@ float* SPKMeans::computeConcept(ClusterData *data, int pIndx)
 // clusters the data into k partitions. Non-parallel (standard) version.
 ClusterData* SPKMeans::runSPKMeans()
 {
-    // TODO - temporary (implement this in reader)
-    // convert document data format!
-    txnScheme();
-    temp_Document* docs[dc];
-    for(int i=0; i<dc; i++) {
-        docs[i] = new temp_Document();
-        vector<temp_ValueIndex*> non_zeros;
-        for(int j=0; j<wc; j++) {
-            if(doc_matrix[i][j] > 0) {
-                temp_ValueIndex *vi = new temp_ValueIndex();
-                vi->value = doc_matrix[i][j];
-                vi->index = j;
-                non_zeros.push_back(vi);
-            }
-        }
-        int num_nz = non_zeros.size();
-        docs[i]->num_nonzero = num_nz;
-        docs[i]->non_zeros = new temp_ValueIndex*[num_nz];
-        for(int j=0; j<num_nz; j++) {
-            temp_ValueIndex *vi = non_zeros[j];
-            docs[i]->non_zeros[j] = non_zeros[j];
-        }
-    }
-
     // keep track of the run time for this algorithm
     Galois::Timer timer;
     timer.start();
@@ -307,10 +272,10 @@ ClusterData* SPKMeans::runSPKMeans()
             // or if optimization is disabled
             int pIndx = 0;
             if(changed[0])
-                cValues[i*k] = temp_cosineSimilarity(concepts[0], i, data->docs[i]);
+                cValues[i*k] = cosineSimilarity(data, i, 0);
             for(int j=1; j<k; j++) {
                 if(changed[j]) // again, only if changed
-                    cValues[i*k + j] = temp_cosineSimilarity(concepts[j], i, data->docs[i]);
+                    cValues[i*k + j] = cosineSimilarity(data, i, j);
                 if(cValues[i*k + j] > cValues[i*k + pIndx])
                     pIndx = j;
             }
@@ -352,7 +317,6 @@ ClusterData* SPKMeans::runSPKMeans()
     timer.stop();
     reportTime(iterations, timer.get(), p_time, c_time, q_time);
 
-    delete data;
     // return the resulting partitions and concepts in the ClusterData struct
-    return 0;
+    return data;
 }

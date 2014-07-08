@@ -84,7 +84,6 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     float **concepts = data->concepts;
     bool *changed = data->changed;
     float *cValues = data->cValues;
-    float *qualities = data->qualities;
 
     // compute initial partitions, concepts, and quality
     initPartitions(data);
@@ -105,10 +104,10 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
             int pIndx = 0;
             // only update cosine similarities if partitions have changed
             if(changed[0])
-                cValues[i*k] = cosineSimilarity(concepts[0], i);
+                cValues[i*k] = cosineSimilarity(data, i, 0);
             for(int j=1; j<k; j++) {
                 if(changed[j]) // again, only if changed
-                    cValues[i*k + j] = cosineSimilarity(concepts[j], i);
+                    cValues[i*k + j] = cosineSimilarity(data, i, j);
                 if(cValues[i*k + j] > cValues[i*k + pIndx])
                     pIndx = j;
             }
@@ -118,7 +117,8 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
         p_time += ptimer.get();
 
         // update which partitions changed since last time, then swap pointers
-        data->findChangedPartitions();
+        if(optimize)
+            data->findChangedPartitions();
         data->swapAssignments();
 
         // compute new concept vectors

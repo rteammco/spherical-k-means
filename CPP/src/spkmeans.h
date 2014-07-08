@@ -55,18 +55,6 @@ class SPKMeans {
     void reportTime(int iterations, float total_time,
                     float p_time = 0, float c_time = 0, float q_time = 0);
 
-    /***** TEMP ADDED */
-    struct temp_ValueIndex {
-        float value;
-        int index;
-    };
-    struct temp_Document {
-        int num_nonzero;
-        temp_ValueIndex** non_zeros;
-    };
-    float temp_cosineSimilarity(float *cv, int doc_index, Document &doc);
-    /******************/
-
   public:
     // initialize wc, dc, k, and doc_matrix, and document norms
     SPKMeans(float **doc_matrix_, int k_, int dc_, int wc_);
@@ -81,7 +69,7 @@ class SPKMeans {
     void enableOptimization();
 
     // spkmeans computation functions made public for binding to Galois structs
-    float cosineSimilarity(float *cv, int doc_index);
+    float cosineSimilarity(ClusterData *data, int doc_index, int cluster);
     float* computeConcept(ClusterData *data, int pIndx);
 
     // the algorithm is implemented differently by each type of paradigm
