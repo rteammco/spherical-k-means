@@ -7,15 +7,12 @@
 
 #include "spkmeans.h"
 
-#include <algorithm>
-#include <cmath>
 #include <iostream>
-#include <vector> // TODO - debug
 
 #include "Galois/Timer.h"
 
-#include "cluster_data.h"
 #include "vectors.h"
+
 
 using namespace std;
 
@@ -130,7 +127,7 @@ void SPKMeans::txnScheme()
 void SPKMeans::initPartitions(ClusterData *data)
 {
     // choose an initial partitioning
-    int split = floor(dc / k);
+    int split = dc / k;
     cout << "Split = " << split << endl;
     int base = 1;
     for(int i=0; i<k; i++) {

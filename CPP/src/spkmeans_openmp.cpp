@@ -6,15 +6,12 @@
 
 #include "spkmeans.h"
 
-#include <algorithm>
-#include <cmath>
 #include <iostream>
 
 #include <omp.h>
 #include "Galois/Timer.h"
 
 #include "cluster_data.h"
-#include "vectors.h"
 
 using namespace std;
 
