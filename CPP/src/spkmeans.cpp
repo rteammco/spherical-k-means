@@ -12,6 +12,7 @@
 #include "Galois/Timer.h"
 
 #include "vectors.h"
+#include <vector>
 
 
 using namespace std;
@@ -183,7 +184,7 @@ float SPKMeans::computeQ(ClusterData *data)
 float SPKMeans::cosineSimilarity(ClusterData *data, int doc_index, int cluster)
 {
     // TODO - same optimization for concepts? can we cache doc norms better?
-    float cnorm = vec_norm(data->concepts[cluster], wc); // segfault??
+    float cnorm = vec_norm(data->concepts[cluster], wc);
     float dnorm = doc_norms[doc_index];
 
     // here is where we save time: compute the dot product!
@@ -264,6 +265,10 @@ ClusterData* SPKMeans::runSPKMeans()
 
         // compute new partitions based on old concept vectors
         ptimer.start();
+        float avgpriority = 0;
+        float avgmovepriority = 0;
+        int num_moved = 0;
+        int num_moved_lower = 0;
         for(int i=0; i<dc; i++) {
             // only update cosine similarities if partitions have changed
             // or if optimization is disabled
@@ -276,10 +281,22 @@ ClusterData* SPKMeans::runSPKMeans()
                 if(cValues[i*k + j] > cValues[i*k + pIndx])
                     pIndx = j;
             }
-            data->assignPartition(i, pIndx);
+            float priority = 1 - cValues[i*k + data->p_asgns[i]];
+            avgpriority += priority;
+            if(pIndx != data->p_asgns[i]) {
+                avgmovepriority += priority;
+                num_moved++;
+            }
+            data->assignPartition(i, pIndx, priority);
         }
         ptimer.stop();
         p_time += ptimer.get();
+
+        avgpriority /= dc;
+        avgmovepriority /= num_moved;
+        cout << "Number of documents moved: " << num_moved << endl;
+        cout << "Average document priority: " << avgpriority << endl;
+        cout << "    Average move priority: " << avgmovepriority << endl;
 
         // update which partitions changed since last time, then swap pointers
         if(optimize)
