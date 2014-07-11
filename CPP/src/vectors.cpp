@@ -73,6 +73,27 @@ float* vec_pow_new(float *vec, int size, float power)
 
 
 
+// [return] Returns a new vector of the given size filled with zeros.
+float* vec_zeros(int size)
+{
+    float *vec = new float[size];
+    for(int i=0; i<size; i++)
+        vec[i] = 0;
+    return vec;
+}
+
+
+
+// [in-place] Adds the second vector to the first one, changing the first
+// vector but leaving the second unchanged.
+void vec_add(float *vec1, float *vec2, int size)
+{
+    for(int i=0; i<size; i++)
+        vec1[i] += vec2[i];
+}
+
+
+
 // [in-place] Multiplies each value in the given vector by the given number.
 void vec_multiply(float *vec, int size, float value)
 {

@@ -41,15 +41,6 @@ ClusterData::ClusterData(int k_, int dc_, int wc_, float **doc_matrix,
         docs[i] = d;
     }
 
-    // set partitions pointer, and initialize all to 0
-    // TODO - remove ------------------------------
-    partitions = new float**[k];
-    for(int i=0; i<k; i++)
-        partitions[i] = 0;
-    // set partition sizes pointer
-    p_sizes = new int[k];
-    // --------------------------------------------
-
     // set concepts pointer
     if(concepts_== 0)
         concepts = new float*[k];
@@ -148,18 +139,6 @@ void ClusterData::findChangedPartitions()
 
 
 
-// Cleans up partition array by deleting the list of document vectors in
-// each partition slot. The vectors themselves are NOT deleted, nor is
-// the actual partition list.
-void ClusterData::clearPartitions()
-{
-    for(int i=0; i<k; i++)
-        if(partitions[i] != 0)
-            delete[] partitions[i];
-}
-
-
-
 // Cleans concept vector memory, permanently deleting all of the concept
 // vectors. The actual concept vector list is NOT deleted.
 void ClusterData::clearConcepts()
@@ -174,19 +153,6 @@ void ClusterData::clearConcepts()
 // WARNING: this will turn all data structure pointers to NULL.
 void ClusterData::clearMemory()
 {
-    // TODO - remove ----------------------
-    // clean up partition, size, and concept vector arrays
-    if(partitions != 0) {
-        clearPartitions();
-        delete[] partitions;
-        partitions = 0;
-    }
-    if(p_sizes != 0) {
-        delete[] p_sizes;
-        p_sizes = 0;
-    }
-    // ------------------------------------
-
     // clean up the document data structures
     if(docs != 0) {
         delete[] docs;

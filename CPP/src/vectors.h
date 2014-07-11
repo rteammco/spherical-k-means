@@ -24,6 +24,12 @@ float* vec_sum(float **vecs, int size, int num_vecs);
 // and returns the resulting vector.
 float* vec_pow_new(float *vec, int size, float power);
 
+// [return] Returns a new zero-vector of the given size.
+float* vec_zeros(int size);
+
+// [in-place] Adds the second vector to the first one.
+void vec_add(float *vec1, float *vec2, int size);
+
 // [in-place] Multiplies each value in the given vector by the given number.
 void vec_multiply(float *vec, int size, float value);
 

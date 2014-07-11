@@ -38,10 +38,6 @@ class ClusterData {
     int dc;
     int wc;
 
-    // TODO - remove this
-    float ***partitions;
-    int *p_sizes;
-
     // pointers to concept vectors and partition assignments (current and new),
     // and document priorities
     int *p_asgns;
@@ -77,9 +73,6 @@ class ClusterData {
 
     // Updates which partitions have been changed since last partitioning.
     void findChangedPartitions();
-
-    // Cleans up partition array. TODO - remove
-    void clearPartitions();
 
     // Cleans concept vector memory.
     void clearConcepts();

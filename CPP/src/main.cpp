@@ -94,8 +94,17 @@ void displayResults(ClusterData *data, char **words, int num_to_show = 10)
     //  words that occur in the partition:
     for(int i=0; i<(data->k); i++) {
         cout << "Partition #" << (i+1) << ":" << endl;
-        // sum the weights
-        float *sum = vec_sum(data->partitions[i], data->wc, data->p_sizes[i]);
+
+        // find all documents in this partition and sum them together.
+        float *sum = vec_zeros(data->wc);
+        for(int j=0; j<(data->dc); j++) {
+            if(data->p_asgns[j] == i) {
+                for(int a=0; a<(data->docs[j].count); a++) {
+                    float value = data->docs[j].words[a].value;
+                    sum[data->docs[j].words[a].index] += value;
+                }
+            }
+        }
 
         // sort this sum using C++ priority queue (keeping track of indices)
         vector<float> values(sum, sum + data->wc);
@@ -112,6 +121,8 @@ void displayResults(ClusterData *data, char **words, int num_to_show = 10)
                 cout << "   " << index << endl;
             q.pop();
         }
+
+        delete[] sum;
     }
 }
 
