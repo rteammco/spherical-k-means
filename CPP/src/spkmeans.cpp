@@ -155,31 +155,23 @@ float SPKMeans::computeQ(ClusterData *data)
 {
     float quality = 0;
 
-    // NOTE - there was a single-partition computeQ function,
-    //        re-implement or not?
-    float q2 = 0;
+    // NOTE - there was a single-partition computeQ function, re-implement?
     for(int i=0; i<k; i++) {
-        float sum2 = 0;
         if(data->changed[i]) {
-            // initialize sum vector to 0
-            float sum_p[wc];
-            for(int a=0; a<wc; a++)
-                sum_p[a] = 0;
+            float *sum_p = vec_zeros(wc);
             // add all documents associated with this partition
             for(int j=0; j<dc; j++) {
                 if(data->p_asgns[j] == i) {
-                    sum2 += data->cValues[j];
                     for(int a=0; a<wc; a++)
                         sum_p[a] += doc_matrix[j][a];
                 }
             }
             data->qualities[i] = vec_dot(sum_p, data->concepts[i], wc);
+            delete[] sum_p;
         }
-        q2 += sum2; // TODO - sum2 should work...?
         quality += data->qualities[i];
     }
 
-    cout << "Quality #2: " << q2 << endl;
     return quality;
 }
 
