@@ -195,6 +195,11 @@ int processArgs(int argc, char **argv,
         // otherwise, check the given flag value
         else {
             i++;
+            if(i >= argc) {
+                cout << "Warning: expected value after \"" << arg
+                     << "\" argument. Continuing anyway." << endl;
+                continue;
+            }
             if(arg == "-d") // document file
                 *doc_fname = string(argv[i]);
             else if(arg == "-w" || arg == "-v") // words file
