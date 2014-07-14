@@ -82,6 +82,9 @@ class ClusterData {
     // Returns the average priority of all documents that have moved.
     float getAverageMovedPriority();
 
+    // Returns the average priority of all documents that have NOT moved.
+    float getAverageStayPriority();
+
     // Updates which clusters have been changed since last partitioning.
     void findChangedClusters();
 

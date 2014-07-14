@@ -147,11 +147,22 @@ float ClusterData::getAveragePriority()
 
 
 
-// Returns the average priority of all documents.
+// Returns the average priority of all documents that were moved.
 float ClusterData::getAverageMovedPriority()
 {
     if(num_moved > 0)
         return total_moved_priority / num_moved;
+    else
+        return 0;
+}
+
+
+
+// Returns the average priority of all documents that were NOT moved.
+float ClusterData::getAverageStayPriority()
+{
+    if(num_moved < dc)
+        return (total_priority - total_moved_priority) / (dc - num_moved);
     else
         return 0;
 }

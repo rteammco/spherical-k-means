@@ -264,28 +264,30 @@ ClusterData* SPKMeans::runSPKMeans()
         ptimer.start();
         for(int i=0; i<dc; i++) {
             // only update cosine similarities if cluster has changed
-            // or if optimization is disabled
             int cIndx = 0;
             if(changed[0])
                 cosines[i*k] = cosineSimilarity(data, i, 0);
             for(int j=1; j<k; j++) {
-                if(changed[j]) // again, only if changed
+                if(changed[j])
                     cosines[i*k + j] = cosineSimilarity(data, i, j);
                 if(cosines[i*k + j] > cosines[i*k + cIndx])
                     cIndx = j;
             }
-            // compute the priority heuristic
+            // compute the priority heuristic and assign the document
             float priority = 1 - cosines[i*k + data->p_asgns[i]];
             data->assignCluster(i, cIndx, priority);
         }
         ptimer.stop();
         p_time += ptimer.get();
 
+        // report priorities and number of documents that moved
         cout << "Number of documents moved: " << data->num_moved << endl;
         cout << "Average document priority: "
              << data->getAveragePriority() << endl;
         cout << "   Average moved priority: "
              << data->getAverageMovedPriority() << endl;
+        cout << "  Average stayed priority: "
+             << data->getAverageStayPriority() << endl;
 
         // update which clusters changed since last time, then swap pointers
         if(optimize)
