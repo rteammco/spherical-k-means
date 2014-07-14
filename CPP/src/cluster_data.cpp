@@ -17,7 +17,7 @@
 // initialized instead.
 ClusterData::ClusterData(int k_, int dc_, int wc_, float **doc_matrix,
     float **concepts_, int *p_asgns_, float *doc_priorities_,
-    bool *changed_, float *cValues_, float *qualities_)
+    bool *changed_, float *cosine_similarities_, float *qualities_)
 {
     // set the size variables (k, document count, word count)
     k = k_;
@@ -70,12 +70,12 @@ ClusterData::ClusterData(int k_, int dc_, int wc_, float **doc_matrix,
         changed = changed_;
 
     // set cosine similarity cache pointer
-    if(cValues_ == 0)
-        cValues = new float[k*dc];
+    if(cosine_similarities_ == 0)
+        cosine_similarities = new float[k*dc];
     else
-        cValues = cValues_;
+        cosine_similarities = cosine_similarities_;
 
-    // set partition qualities cache pointer
+    // set cluster qualities cache pointer
     if(qualities_ == 0)
         qualities = new float[k];
     else
@@ -92,21 +92,21 @@ ClusterData::~ClusterData()
 
 
 
-// Gives document doc a new partition assignment part (these are indices).
-// These partitions are stored in the p_asgns_new array, and NOT the
+// Gives document doc a new cluster assignment part (these are indices).
+// These clusters are stored in the p_asgns_new array, and NOT the
 // default one. Use swapAssignments to update.
-void ClusterData::assignPartition(int doc, int partition)
+void ClusterData::assignCluster(int doc, int cluster)
 {
-    p_asgns_new[doc] = partition;
+    p_asgns_new[doc] = cluster;
 }
 
 
 
-// Assigns a partition to this document (same as assignPartition above),
+// Assigns a cluster to this document (same as assignCluster above),
 // but also updates the document's priority.
-void ClusterData::assignPartition(int doc, int partition, float priority)
+void ClusterData::assignCluster(int doc, int cluster, float priority)
 {
-    assignPartition(doc, partition);
+    assignCluster(doc, cluster);
     doc_priorities[doc] = priority;
 }
 
@@ -123,9 +123,9 @@ void ClusterData::swapAssignments()
 
 
 
-// Computes which partitions have changed, and assigns the boolean array
+// Computes which clusters have changed, and assigns the boolean array
 // accordingly.
-void ClusterData::findChangedPartitions()
+void ClusterData::findChangedClusters()
 {
     for(int i=0; i<k; i++)
         changed[i] = false;
@@ -181,13 +181,12 @@ void ClusterData::clearMemory()
         delete[] changed;
         changed = 0;
     }
-    if(cValues != 0) {
-        delete[] cValues;
-        cValues = 0;
+    if(cosine_similarities != 0) {
+        delete[] cosine_similarities;
+        cosine_similarities = 0;
     }
     if(qualities != 0) {
         delete[] qualities;
         qualities = 0;
     }
 }
-

@@ -27,8 +27,8 @@ struct Document {
 };
 
 
-// ClusterData class can contain partition and concept vector pointers, and
-// functions to clean out the memory.
+// ClusterData class can contain partition assignments and concept vector
+// pointers, and functions to manage optimizations and memory.
 class ClusterData {
 
   public:
@@ -45,9 +45,9 @@ class ClusterData {
     float **concepts;
     float *doc_priorities;
 
-    // pointers to cosine similarities, qualities, and partition change flags
+    // pointers to cosine similarities, qualities, and cluster change flags
     bool *changed;
-    float *cValues;
+    float *cosine_similarities;
     float *qualities;
 
     // document data structures that map documents to words
@@ -57,22 +57,23 @@ class ClusterData {
     // Constructor: sets up variables and data structures.
     ClusterData(int k_, int dc_, int wc_, float **doc_matrix,
             float **cvs_ = 0, int *p_asgns_ = 0, float *doc_priorities_ = 0,
-            bool *changed_ = 0, float *cValues_ = 0, float *qualities_ = 0);
+            bool *changed_ = 0, float *cosine_similarities_ = 0,
+            float *qualities_ = 0);
 
     // Destructor: calls its own clean up function.
     ~ClusterData();
 
-    // Assigns a partition to the given document.
-    void assignPartition(int doc, int partition);
+    // Assigns a cluster to the given document.
+    void assignCluster(int doc, int cluster);
 
-    // Assigns a partition and priority to the given document.
-    void assignPartition(int doc, int partition, float priority);
+    // Assigns a cluster and priority to the given document.
+    void assignCluster(int doc, int cluster, float priority);
 
     // Swaps new assignments for the default ones (updates the assignments).
     void swapAssignments();
 
-    // Updates which partitions have been changed since last partitioning.
-    void findChangedPartitions();
+    // Updates which clusters have been changed since last partitioning.
+    void findChangedClusters();
 
     // Cleans concept vector memory.
     void clearConcepts();

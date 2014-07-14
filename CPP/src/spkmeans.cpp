@@ -70,7 +70,7 @@ void SPKMeans::enableOptimization()
 
 
 // Reports the overall quality and, if optimizing, also displays how many
-// partitions have changed.
+// clusters have changed.
 void SPKMeans::reportQuality(ClusterData *data, float quality, float dQ)
 {
     cout << "Quality: " << quality << " (+" << dQ << ")";
@@ -79,7 +79,7 @@ void SPKMeans::reportQuality(ClusterData *data, float quality, float dQ)
         for (int i=0; i<k; i++)
             if(!(data->changed[i]))
                 num_same++;
-        cout << " --- " << num_same << " partitions are the same." << endl;
+        cout << " --- " << num_same << " clusters are the same." << endl;
     }
     else
         cout << " --- optimization disabled." << endl;
@@ -98,11 +98,11 @@ void SPKMeans::reportTime(int iterations, float total_time,
         cout << "No individual time stats available." << endl;
     else {
         cout << "Timers (ms): " << endl
-             << "   partition [" << p_time << "] ("
+             << "   partitioning [" << p_time << "] ("
                 << (p_time/total)*100 << "%)" << endl
-             << "   concepts [" << c_time << "] ("
+             << "   concepts     [" << c_time << "] ("
                 << (c_time/total)*100 << "%)" << endl
-             << "   quality [" << q_time << "] ("
+             << "   quality      [" << q_time << "] ("
                 << (q_time/total)*100 << "%)" << endl;
     }
 }
@@ -123,9 +123,9 @@ void SPKMeans::txnScheme()
 
 
 
-// Initializes the first partition (randomly or otherwise assigned) to provide
-// a starting point for the clustering algorithm.
-void SPKMeans::initPartitions(ClusterData *data)
+// Initializes the first partitioning (randomly or otherwise assigned) to
+// provide a starting point for the clustering algorithm.
+void SPKMeans::initClusters(ClusterData *data)
 {
     // choose an initial partitioning
     int split = dc / k;
@@ -148,18 +148,18 @@ void SPKMeans::initPartitions(ClusterData *data)
 
 
 
-// Returns the total quality of all partitions by summing the qualities of
-// each individual partition. If optimization is enabled, uses cached values
+// Returns the total quality of all clusters by summing the qualities of
+// each individual cluster. If optimization is enabled, uses cached values
 // whenever possible.
 float SPKMeans::computeQ(ClusterData *data)
 {
     float quality = 0;
 
-    // NOTE - there was a single-partition computeQ function, re-implement?
+    // NOTE - there was a single-cluster computeQ function, re-implement?
     for(int i=0; i<k; i++) {
         if(data->changed[i]) {
             float *sum_p = vec_zeros(wc);
-            // add all documents associated with this partition
+            // add all documents associated with this cluster
             for(int j=0; j<dc; j++) {
                 if(data->p_asgns[j] == i) {
                     for(int a=0; a<wc; a++)
@@ -178,10 +178,10 @@ float SPKMeans::computeQ(ClusterData *data)
 
 
 // Computes the cosine similarity value of the two given vectors (dv and cv).
-float SPKMeans::cosineSimilarity(ClusterData *data, int doc_index, int cluster)
+float SPKMeans::cosineSimilarity(ClusterData *data, int doc_index, int cIndx)
 {
     // TODO - same optimization for concepts? can we cache doc norms better?
-    float cnorm = vec_norm(data->concepts[cluster], wc);
+    float cnorm = vec_norm(data->concepts[cIndx], wc);
     float dnorm = doc_norms[doc_index];
 
     // here is where we save time: compute the dot product!
@@ -189,7 +189,7 @@ float SPKMeans::cosineSimilarity(ClusterData *data, int doc_index, int cluster)
     for(int i=0; i<(data->docs[doc_index].count); i++) {
         int word = data->docs[doc_index].words[i].index;
         float value = data->docs[doc_index].words[i].value;
-        dotp += data->concepts[cluster][word] * value;
+        dotp += data->concepts[cIndx][word] * value;
     }
     
     return dotp / (dnorm * cnorm);
@@ -197,19 +197,19 @@ float SPKMeans::cosineSimilarity(ClusterData *data, int doc_index, int cluster)
 
 
 
-// Computes the concept vector of the given partition (by index). The
-// partition documents are accessed using the ClusterData struct, and the
+// Computes the concept vector of the given cluster (by index). The
+// cluster documents are accessed using the ClusterData struct, and the
 // associated concept vector will be allocated and populated.
-float* SPKMeans::computeConcept(ClusterData *data, int pIndx)
+float* SPKMeans::computeConcept(ClusterData *data, int cIndx)
 {
     // create the concept vector and initialize it to 0
     float *concept = new float[wc];
     for(int i=0; i<wc; i++)
         concept[i] = 0;
 
-    // find documents associated w/ this partition, and sum them
+    // find documents associated w/ this cluster, and sum them
     for(int i=0; i<dc; i++) { // for each document
-        if(data->p_asgns[i] == pIndx) { // if doc in cluster
+        if(data->p_asgns[i] == cIndx) { // if doc in cluster
             for(int j=0; j<wc; j++) // add words to concept
                 concept[j] += doc_matrix[i][j];
         }
@@ -224,7 +224,7 @@ float* SPKMeans::computeConcept(ClusterData *data, int pIndx)
 
 
 // Runs the spherical k-means algorithm on the given sparse matrix D and
-// clusters the data into k partitions. Non-parallel (standard) version.
+// clusters the data into k clusters. Non-parallel (standard) version.
 ClusterData* SPKMeans::runSPKMeans()
 {
     // keep track of the run time for this algorithm
@@ -246,10 +246,10 @@ ClusterData* SPKMeans::runSPKMeans()
     ClusterData *data = new ClusterData(k, dc, wc, doc_matrix);
     float **concepts = data->concepts;
     bool *changed = data->changed;
-    float *cValues = data->cValues;
+    float *cosines = data->cosine_similarities;
 
-    // compute initial partitions, concepts, and quality
-    initPartitions(data);
+    // compute initial partitioning, concepts, and quality
+    initClusters(data);
     float quality = computeQ(data);
     cout << "Initial quality: " << quality << endl;
     
@@ -260,44 +260,47 @@ ClusterData* SPKMeans::runSPKMeans()
     while(dQ > Q_THRESHOLD) {
         iterations++;
 
-        // compute new partitions based on old concept vectors
+        // compute new clusters based on old concept vectors
         ptimer.start();
         float avgpriority = 0;
         float avgmovepriority = 0;
         int num_moved = 0;
         int num_moved_lower = 0;
         for(int i=0; i<dc; i++) {
-            // only update cosine similarities if partitions have changed
+            // only update cosine similarities if cluster has changed
             // or if optimization is disabled
-            int pIndx = 0;
+            int cIndx = 0;
             if(changed[0])
-                cValues[i*k] = cosineSimilarity(data, i, 0);
+                cosines[i*k] = cosineSimilarity(data, i, 0);
             for(int j=1; j<k; j++) {
                 if(changed[j]) // again, only if changed
-                    cValues[i*k + j] = cosineSimilarity(data, i, j);
-                if(cValues[i*k + j] > cValues[i*k + pIndx])
-                    pIndx = j;
+                    cosines[i*k + j] = cosineSimilarity(data, i, j);
+                if(cosines[i*k + j] > cosines[i*k + cIndx])
+                    cIndx = j;
             }
-            float priority = 1 - cValues[i*k + data->p_asgns[i]];
+            float priority = 1 - cosines[i*k + data->p_asgns[i]];
             avgpriority += priority;
-            if(pIndx != data->p_asgns[i]) {
+            if(cIndx != data->p_asgns[i]) {
                 avgmovepriority += priority;
                 num_moved++;
             }
-            data->assignPartition(i, pIndx, priority);
+            data->assignCluster(i, cIndx, priority);
         }
         ptimer.stop();
         p_time += ptimer.get();
 
         avgpriority /= dc;
-        avgmovepriority /= num_moved;
+        if(num_moved > 0)
+            avgmovepriority /= num_moved;
+        else
+            avgmovepriority = 0;
         cout << "Number of documents moved: " << num_moved << endl;
         cout << "Average document priority: " << avgpriority << endl;
         cout << "    Average move priority: " << avgmovepriority << endl;
 
-        // update which partitions changed since last time, then swap pointers
+        // update which clusters changed since last time, then swap pointers
         if(optimize)
-            data->findChangedPartitions();
+            data->findChangedClusters();
         data->swapAssignments();
 
         // compute new concept vectors
@@ -319,7 +322,7 @@ ClusterData* SPKMeans::runSPKMeans()
         qtimer.stop();
         q_time += qtimer.get();
 
-        // report the quality of the current partition
+        // report the quality of the current partitioning
         reportQuality(data, quality, dQ);
     }
 
@@ -328,6 +331,6 @@ ClusterData* SPKMeans::runSPKMeans()
     timer.stop();
     reportTime(iterations, timer.get(), p_time, c_time, q_time);
 
-    // return the resulting partitions and concepts in the ClusterData struct
+    // return the resulting clusters and concepts in the ClusterData struct
     return data;
 }

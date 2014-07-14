@@ -42,13 +42,13 @@ class SPKMeans {
     Scheme prep_scheme;
     void txnScheme();
 
-    // initial partition setup
-    void initPartitions(ClusterData *data);
+    // initial partitioning setup
+    void initClusters(ClusterData *data);
 
     // compute quality of partitioning
     float computeQ(ClusterData *data);
 
-    // report current partition quality
+    // report current partitioning quality
     void reportQuality(ClusterData *data, float quality, float dQ);
 
     // report timer stats
@@ -69,8 +69,8 @@ class SPKMeans {
     void enableOptimization();
 
     // spkmeans computation functions made public for binding to Galois structs
-    float cosineSimilarity(ClusterData *data, int doc_index, int cluster);
-    float* computeConcept(ClusterData *data, int pIndx);
+    float cosineSimilarity(ClusterData *data, int doc_index, int cIndx);
+    float* computeConcept(ClusterData *data, int cIndx);
 
     // the algorithm is implemented differently by each type of paradigm
     virtual ClusterData* runSPKMeans();
@@ -82,7 +82,6 @@ class SPKMeans {
 class SPKMeansOpenMP : public SPKMeans {
   private:
     unsigned int num_threads;
-    //float computeQ(float ***partitions, int *p_sizes, float **concepts);
 
   public:
     // constructor: set the number of threads

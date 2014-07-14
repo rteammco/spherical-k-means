@@ -16,9 +16,16 @@ clean:
 	rm spkmeans
 
 
-# Run with a small test file:
+# Run test with a small test file, with different versions:
+TESTCMD = ./spkmeans -d ../TestData/documents --autok --noresults
 test:
-	./spkmeans -d ../TestData/documents --autok --noresults
+	$(TESTCMD)
+# OpenMP version:
+testo:
+	$(TESTCMD) --openmp
+# Galois version:
+testg:
+	$(TESTCMD) --galois
 
 
 # Run with the larger test data set:

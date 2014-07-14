@@ -40,25 +40,9 @@ unsigned int SPKMeansOpenMP::getNumThreads()
 }
 
 
-// Overridden for parallelizing:
-/*float SPKMeansOpenMP::computeQ(
-    float ***partitions, int *p_sizes, float **concepts)
-{
-    float quality = 0;
-    //mutex mut;
-    //#pragma omp parallel for num_threads(num_threads)
-    for(int i=0; i<k; i++) {
-      //  mut.lock();
-        quality +=
-            SPKMeans::computeQ(partitions[i], p_sizes[i], concepts[i]);
-      //  mut.unlock();
-    }
-    return quality;
-}*/
-
 
 // Runs the spherical k-means algorithm on the given sparse matrix D and
-// clusters the data into k partitions.
+// clusters the data into k clusters.
 ClusterData* SPKMeansOpenMP::runSPKMeans()
 {
     // keep track of the run time for this algorithm
@@ -80,10 +64,10 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     ClusterData *data = new ClusterData(k, dc, wc, doc_matrix);
     float **concepts = data->concepts;
     bool *changed = data->changed;
-    float *cValues = data->cValues;
+    float *cosines = data->cosine_similarities;
 
-    // compute initial partitions, concepts, and quality
-    initPartitions(data);
+    // compute initial partitioning, concepts, and quality
+    initClusters(data);
     float quality = computeQ(data);
     cout << "Initial quality: " << quality << endl;
 
@@ -94,35 +78,35 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     while(dQ > Q_THRESHOLD) {
         iterations++;
 
-        // compute new partitions based on old concept vectors
+        // compute new clusters based on old concept vectors
         ptimer.start();
         #pragma omp parallel for
         for(int i=0; i<dc; i++) {
-            int pIndx = 0;
-            // only update cosine similarities if partitions have changed
+            int cIndx = 0;
+            // only update cosine similarities if cluster has changed
             if(changed[0])
-                cValues[i*k] = cosineSimilarity(data, i, 0);
+                cosines[i*k] = cosineSimilarity(data, i, 0);
             for(int j=1; j<k; j++) {
                 if(changed[j]) // again, only if changed
-                    cValues[i*k + j] = cosineSimilarity(data, i, j);
-                if(cValues[i*k + j] > cValues[i*k + pIndx])
-                    pIndx = j;
+                    cosines[i*k + j] = cosineSimilarity(data, i, j);
+                if(cosines[i*k + j] > cosines[i*k + cIndx])
+                    cIndx = j;
             }
-            data->assignPartition(i, pIndx);
+            data->assignCluster(i, cIndx);
         }
         ptimer.stop();
         p_time += ptimer.get();
 
-        // update which partitions changed since last time, then swap pointers
+        // update which clusters changed since last time, then swap pointers
         if(optimize)
-            data->findChangedPartitions();
+            data->findChangedClusters();
         data->swapAssignments();
 
         // compute new concept vectors
         ctimer.start();
         #pragma omp parallel for
         for(int i=0; i<k; i++) {
-            // only update concept vectors if partition has changed
+            // only update concept vectors if cluster has changed
             if(changed[i]) {
                 delete[] concepts[i];
                 concepts[i] = computeConcept(data, i);
@@ -139,7 +123,7 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
         qtimer.stop();
         q_time += qtimer.get();
 
-        // report the quality of the current partition
+        // report the quality of the current partitioning
         reportQuality(data, quality, dQ);
     }
 
@@ -148,6 +132,6 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     timer.stop();
     reportTime(iterations, timer.get(), p_time, c_time, q_time);
 
-    // return the resulting partitions and concepts in the ClusterData struct
+    // return the resulting clusters and concepts in the ClusterData struct
     return data;
 }
