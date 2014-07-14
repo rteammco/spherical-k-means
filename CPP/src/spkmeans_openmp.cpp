@@ -100,7 +100,7 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
         // update which clusters changed since last time, then swap pointers
         if(optimize)
             data->findChangedClusters();
-        data->swapAssignments();
+        data->applyAssignments();
 
         // compute new concept vectors
         ctimer.start();

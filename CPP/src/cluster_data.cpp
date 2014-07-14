@@ -80,6 +80,11 @@ ClusterData::ClusterData(int k_, int dc_, int wc_, float **doc_matrix,
         qualities = new float[k];
     else
         qualities = qualities_;
+
+    // init all counters to 0
+    total_priority = 0;
+    total_moved_priority = 0;
+    num_moved = 0;
 }
 
 
@@ -103,22 +108,52 @@ void ClusterData::assignCluster(int doc, int cluster)
 
 
 // Assigns a cluster to this document (same as assignCluster above),
-// but also updates the document's priority.
+// but also updates the document's priority and moved statistics.
 void ClusterData::assignCluster(int doc, int cluster, float priority)
 {
-    assignCluster(doc, cluster);
+    p_asgns_new[doc] = cluster;
     doc_priorities[doc] = priority;
+    total_priority += priority;
+
+    // if new assignment is different, this document moved
+    if(cluster != p_asgns[doc]) {
+        num_moved++;
+        total_moved_priority += priority;
+    }
 }
 
 
 
 // Swaps the p_assignments and new_p_assignments pointers such so that
 // the new values are updated without needing to manipulate memory.
-void ClusterData::swapAssignments()
+// This also resets the priority and moved counts to 0.
+void ClusterData::applyAssignments()
 {
     int *temp = p_asgns;
     p_asgns = p_asgns_new;
     p_asgns_new = temp;
+    total_priority = 0;
+    total_moved_priority = 0;
+    num_moved = 0;
+}
+
+
+
+// Returns the average priority of all documents.
+float ClusterData::getAveragePriority()
+{
+    return total_priority / dc;
+}
+
+
+
+// Returns the average priority of all documents.
+float ClusterData::getAverageMovedPriority()
+{
+    if(num_moved > 0)
+        return total_moved_priority / num_moved;
+    else
+        return 0;
 }
 
 

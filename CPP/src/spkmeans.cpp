@@ -262,10 +262,6 @@ ClusterData* SPKMeans::runSPKMeans()
 
         // compute new clusters based on old concept vectors
         ptimer.start();
-        float avgpriority = 0;
-        float avgmovepriority = 0;
-        int num_moved = 0;
-        int num_moved_lower = 0;
         for(int i=0; i<dc; i++) {
             // only update cosine similarities if cluster has changed
             // or if optimization is disabled
@@ -278,30 +274,23 @@ ClusterData* SPKMeans::runSPKMeans()
                 if(cosines[i*k + j] > cosines[i*k + cIndx])
                     cIndx = j;
             }
+            // compute the priority heuristic
             float priority = 1 - cosines[i*k + data->p_asgns[i]];
-            avgpriority += priority;
-            if(cIndx != data->p_asgns[i]) {
-                avgmovepriority += priority;
-                num_moved++;
-            }
             data->assignCluster(i, cIndx, priority);
         }
         ptimer.stop();
         p_time += ptimer.get();
 
-        avgpriority /= dc;
-        if(num_moved > 0)
-            avgmovepriority /= num_moved;
-        else
-            avgmovepriority = 0;
-        cout << "Number of documents moved: " << num_moved << endl;
-        cout << "Average document priority: " << avgpriority << endl;
-        cout << "    Average move priority: " << avgmovepriority << endl;
+        cout << "Number of documents moved: " << data->num_moved << endl;
+        cout << "Average document priority: "
+             << data->getAveragePriority() << endl;
+        cout << "   Average moved priority: "
+             << data->getAverageMovedPriority() << endl;
 
         // update which clusters changed since last time, then swap pointers
         if(optimize)
             data->findChangedClusters();
-        data->swapAssignments();
+        data->applyAssignments();
 
         // compute new concept vectors
         ctimer.start();

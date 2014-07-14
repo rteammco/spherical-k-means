@@ -38,12 +38,16 @@ class ClusterData {
     int dc;
     int wc;
 
-    // pointers to concept vectors and partition assignments (current and new),
-    // and document priorities
+    // pointers to concept vectors and partition assignments (current and new)
     int *p_asgns;
     int *p_asgns_new;
     float **concepts;
+
+    // document priority and heuristic tracking variables
     float *doc_priorities;
+    float total_priority;
+    float total_moved_priority;
+    int num_moved;
 
     // pointers to cosine similarities, qualities, and cluster change flags
     bool *changed;
@@ -70,7 +74,13 @@ class ClusterData {
     void assignCluster(int doc, int cluster, float priority);
 
     // Swaps new assignments for the default ones (updates the assignments).
-    void swapAssignments();
+    void applyAssignments();
+
+    // Returns the average priority of all documents.
+    float getAveragePriority();
+
+    // Returns the average priority of all documents that have moved.
+    float getAverageMovedPriority();
 
     // Updates which clusters have been changed since last partitioning.
     void findChangedClusters();
