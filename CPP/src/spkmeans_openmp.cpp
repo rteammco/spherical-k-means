@@ -9,7 +9,7 @@
 #include <iostream>
 
 #include <omp.h>
-#include "Galois/Timer.h"
+#include "timer.h"
 
 #include "cluster_data.h"
 
@@ -46,16 +46,13 @@ unsigned int SPKMeansOpenMP::getNumThreads()
 ClusterData* SPKMeansOpenMP::runSPKMeans()
 {
     // keep track of the run time for this algorithm
-    Galois::Timer timer;
+    Timer timer;
     timer.start();
 
     // keep track of all individual component times for analysis
-    Galois::Timer ptimer;
-    Galois::Timer ctimer;
-    Galois::Timer qtimer;
-    float p_time = 0;
-    float c_time = 0;
-    float q_time = 0;
+    Timer ptimer;
+    Timer ctimer;
+    Timer qtimer;
 
     // apply the TXN scheme on the document vectors (normalize them)
     txnScheme();
@@ -95,7 +92,6 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
             data->assignCluster(i, cIndx);
         }
         ptimer.stop();
-        p_time += ptimer.get();
 
         // update which clusters changed since last time, then swap pointers
         if(optimize)
@@ -113,7 +109,6 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
             }
         }
         ctimer.stop();
-        c_time += ctimer.get();
 
         // compute quality of new partitioning
         qtimer.start();
@@ -121,7 +116,6 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
         dQ = n_quality - quality;
         quality = n_quality;
         qtimer.stop();
-        q_time += qtimer.get();
 
         // report the quality of the current partitioning
         reportQuality(data, quality, dQ);
@@ -130,7 +124,8 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
 
     // report runtime statistics
     timer.stop();
-    reportTime(iterations, timer.get(), p_time, c_time, q_time);
+    reportTime(iterations, timer.get(), ptimer.get(), ctimer.get(),
+               qtimer.get());
 
     // return the resulting clusters and concepts in the ClusterData struct
     return data;

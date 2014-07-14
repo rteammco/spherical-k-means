@@ -3,7 +3,7 @@ GALOIS_PATH = ./../../../Galois-2.2.1
 
 INCLUDES = -I$(GALOIS_PATH)/build/release/include -I$(GALOIS_PATH)/include
 LINKS = -L$(GALOIS_PATH)/build/release/src -lgalois -pthread -ldl 
-SRC = src/main.cpp src/reader.cpp src/vectors.cpp src/cluster_data.cpp src/spkmeans.cpp src/spkmeans_openmp.cpp src/spkmeans_galois.cpp
+SRC = src/main.cpp src/reader.cpp src/vectors.cpp src/timer.cpp src/cluster_data.cpp src/spkmeans.cpp src/spkmeans_openmp.cpp src/spkmeans_galois.cpp
 
 
 # Compile normally (includes debug information):

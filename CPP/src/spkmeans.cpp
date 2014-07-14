@@ -9,7 +9,7 @@
 
 #include <iostream>
 
-#include "Galois/Timer.h"
+#include "timer.h"
 
 #include "vectors.h"
 #include <vector>
@@ -228,16 +228,13 @@ float* SPKMeans::computeConcept(ClusterData *data, int cIndx)
 ClusterData* SPKMeans::runSPKMeans()
 {
     // keep track of the run time for this algorithm
-    Galois::Timer timer;
+    Timer timer;
     timer.start();
 
     // keep track of all individual component times for analysis
-    Galois::Timer ptimer;
-    Galois::Timer ctimer;
-    Galois::Timer qtimer;
-    float p_time = 0;
-    float c_time = 0;
-    float q_time = 0;
+    Timer ptimer;
+    Timer ctimer;
+    Timer qtimer;
 
     // apply the TXN scheme on the document vectors (normalize them)
     txnScheme();
@@ -278,7 +275,6 @@ ClusterData* SPKMeans::runSPKMeans()
             data->assignCluster(i, cIndx, priority);
         }
         ptimer.stop();
-        p_time += ptimer.get();
 
         // report priorities and number of documents that moved
         cout << "Number of documents moved: " << data->num_moved << endl;
@@ -303,7 +299,6 @@ ClusterData* SPKMeans::runSPKMeans()
             }
         }
         ctimer.stop();
-        c_time += ctimer.get();
 
         // compute quality of new partitioning
         qtimer.start();
@@ -311,7 +306,6 @@ ClusterData* SPKMeans::runSPKMeans()
         dQ = n_quality - quality;
         quality = n_quality;
         qtimer.stop();
-        q_time += qtimer.get();
 
         // report the quality of the current partitioning
         reportQuality(data, quality, dQ);
@@ -320,7 +314,8 @@ ClusterData* SPKMeans::runSPKMeans()
 
     // report runtime statistics
     timer.stop();
-    reportTime(iterations, timer.get(), p_time, c_time, q_time);
+    reportTime(iterations, timer.get(), ptimer.get(), ctimer.get(),
+               qtimer.get());
 
     // return the resulting clusters and concepts in the ClusterData struct
     return data;
