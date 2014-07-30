@@ -258,7 +258,7 @@ ClusterData* SPKMeans::runSPKMeans()
         iterations++;
 
         // TODO - temporary (testing) -----------------------------------------
-        if(iterations > 1) {
+        /*if(iterations > 1) {
             cout << "New version." << endl;
             ptimer.start();
             float averagePriority = data->getAverageMovedPriority();
@@ -278,7 +278,7 @@ ClusterData* SPKMeans::runSPKMeans()
                     data->assignCluster(i, cIndx, priority);
                 }
             }
-        } else {
+        } else {*/
         // --------------------------------------------------------------------
 
         // compute new clusters based on old concept vectors
@@ -295,19 +295,21 @@ ClusterData* SPKMeans::runSPKMeans()
                     cIndx = j;
             }
             // compute the priority heuristic and assign the document
-            float priority = 1 - cosines[i*k + data->p_asgns[i]];
-            data->assignCluster(i, cIndx, priority);
-        }}
+            //float priority = 1 - cosines[i*k + data->p_asgns[i]];
+            data->assignCluster(i, cIndx);//, priority);
+        }//}
         ptimer.stop();
 
+        // TODO - temporary (testing) -----------------------------------------
         // report priorities and number of documents that moved
-        cout << "Number of documents moved: " << data->num_moved << endl;
+        /*cout << "Number of documents moved: " << data->num_moved << endl;
         cout << "Average document priority: "
              << data->getAveragePriority() << endl;
         cout << "   Average moved priority: "
              << data->getAverageMovedPriority() << endl;
         cout << "  Average stayed priority: "
-             << data->getAverageStayPriority() << endl;
+             << data->getAverageStayPriority() << endl;*/
+        // --------------------------------------------------------------------
 
         // update which clusters changed since last time, then swap pointers
         if(optimize)
