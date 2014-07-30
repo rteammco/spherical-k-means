@@ -43,3 +43,13 @@ vocab_file:
 In this example, "cat" is word 1, "dog" is word 2, and "mouse" is word 3. The
 data set only has one document in it, document 1. Document 1 has one occurrence
 of "cat", four occurences of "dog", and three occurrences of "mouse".
+
+
+-------------------------------------------------------------------------------
+
+Data sets provided here (files are as given):
+
+    documents / vocabulary  1500 documents, 12419 words, vocabulary included
+    classic3                3893 documents, 4303 words
+    mat                     3891 documents, 19783 words
+    news20                  15935 documents, 62061 words
