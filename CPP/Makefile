@@ -52,7 +52,7 @@ comp3:
 
 
 # Compare two versions w/ biggest dataset
-COMMAND4 = -d ../TestData/news20 -k 10 --noresults
+COMMAND4 = -d ../TestData/news20 -k 200 --noresults
 comp4:
 	./spkmeans $(COMMAND4); ./spkmeans2 $(COMMAND4)
 

@@ -11,7 +11,7 @@
 
 
 // PROGRAM VERSION
-#define VERSION "0.1 (dev)"
+#define VERSION "0.2 (dev)"
 
 
 #include <fstream>

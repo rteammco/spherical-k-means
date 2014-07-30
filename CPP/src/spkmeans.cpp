@@ -257,6 +257,30 @@ ClusterData* SPKMeans::runSPKMeans()
     while(dQ > Q_THRESHOLD) {
         iterations++;
 
+        // TODO - temporary (testing) -----------------------------------------
+        if(iterations > 1) {
+            cout << "New version." << endl;
+            ptimer.start();
+            float averagePriority = data->getAverageMovedPriority();
+            for(int i=0; i<dc; i++) {
+                if(data->doc_priorities[i] > averagePriority) {
+                    int cIndx = 0;
+                    if(changed[0])
+                        cosines[i*k] = cosineSimilarity(data, i, 0);
+                    for(int j=1; j<k; j++) {
+                        if(changed[j])
+                            cosines[i*k + j] = cosineSimilarity(data, i, j);
+                        if(cosines[i*k + j] > cosines[i*k + cIndx])
+                            cIndx = j;
+                    }
+                    // compute the priority heuristic and assign the document
+                    float priority = 1 - cosines[i*k + data->p_asgns[i]];
+                    data->assignCluster(i, cIndx, priority);
+                }
+            }
+        } else {
+        // --------------------------------------------------------------------
+
         // compute new clusters based on old concept vectors
         ptimer.start();
         for(int i=0; i<dc; i++) {
@@ -273,7 +297,7 @@ ClusterData* SPKMeans::runSPKMeans()
             // compute the priority heuristic and assign the document
             float priority = 1 - cosines[i*k + data->p_asgns[i]];
             data->assignCluster(i, cIndx, priority);
-        }
+        }}
         ptimer.stop();
 
         // report priorities and number of documents that moved
