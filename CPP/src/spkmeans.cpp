@@ -283,6 +283,12 @@ ClusterData* SPKMeans::runSPKMeans()
 
         // compute new clusters based on old concept vectors
         ptimer.start();
+
+        // TODO - temporary testing for empty clusters
+        bool has_docs[k];
+        for(int i=0; i<k; i++)
+            has_docs[i] = false;
+
         for(int i=0; i<dc; i++) {
             // only update cosine similarities if cluster has changed
             int cIndx = 0;
@@ -297,7 +303,15 @@ ClusterData* SPKMeans::runSPKMeans()
             // compute the priority heuristic and assign the document
             //float priority = 1 - cosines[i*k + data->p_asgns[i]];
             data->assignCluster(i, cIndx);//, priority);
+            has_docs[cIndx] = true;
         }//}
+
+        // TODO - temporary testing for empty clusters:
+        for(int i=0; i<k; i++) {
+            if(!has_docs[i])
+                cout << "Cluster " << i << " is empty!" << endl;
+        }
+
         ptimer.stop();
 
         // TODO - temporary (testing) -----------------------------------------
