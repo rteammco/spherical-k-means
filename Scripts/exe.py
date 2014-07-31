@@ -1,14 +1,19 @@
+#!/usr/bin/env python3
+
 import os
 import subprocess
+import sys
 
 
-PATH = "../CPP"
+EXE_PATH = "../CPP"
+IN_FILE = "batch"
+OUT_FILE = "output"
 
 
-def run(dataset, k = 0, noscheme = False):
+def run(path, dataset, k = 0, noscheme = False):
     # set the path in which to run the executable
     old_path = os.path.dirname(os.path.realpath(__file__))
-    os.chdir(PATH)
+    os.chdir(path)
 
     # set up the value of k
     if k == 0:
@@ -54,8 +59,12 @@ def interpret(out):
             nz = line[5]
             nz = nz[1:]
         if "k=" in line:
+            if "threads" in line:
+                indx = -4
+            else:
+                indx = -3
             line = line.split()
-            k = line[-3]
+            k = line[indx]
             k = k[2:]
         if "Done" in line:
             line = line.split()
@@ -64,10 +73,10 @@ def interpret(out):
     return docs, words, nz, k, iters, runtime
 
 
-def main(fname, outfile):
+def main(infile, outfile, path):
     # make sure file exists
-    if not os.path.isfile(fname):
-        print("File \"" + fname + "\" not found.")
+    if not os.path.isfile(infile):
+        print("File \"" + infile + "\" not found.")
         return
 
     # output the processed data into an output file
@@ -77,7 +86,7 @@ def main(fname, outfile):
 
     # read file and process each line
     run_data = []
-    runs = open(fname, "r")
+    runs = open(infile, "r")
     for line in runs:
         line = line.strip()
         line = line.split()
@@ -90,7 +99,7 @@ def main(fname, outfile):
             k = int(line[1])
         if len(line) > 2 and line[2].lower() == "true":
             noscheme = True
-        out, err = run(dataset, k, noscheme)
+        out, err = run(path, dataset, k, noscheme)
         # if we got anything, format it and append it to the output file
         if out and not err and "error" not in out.lower():
             info = interpret(out)
@@ -110,4 +119,18 @@ def main(fname, outfile):
         print(info)
 
 
-main("runs.txt", "data.txt")
+if __name__ == "__main__":
+    # parse arguments and try to run
+    if len(sys.argv) > 1:
+        infile = sys.argv[1]
+    else:
+        infile = IN_FILE
+    if len(sys.argv) > 2:
+        outfile = sys.argv[2]
+    else:
+        outfile = OUT_FILE
+    if len(sys.argv) > 3:
+        path = sys.argv[3]
+    else:
+        path = EXE_PATH
+    main(infile, outfile, path)

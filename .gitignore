@@ -8,3 +8,5 @@ __pycache__
 
 Matlab/MATLAB/*
 TestData/*.py
+Scripts/*
+!Scripts/*.py
