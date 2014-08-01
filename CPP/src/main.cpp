@@ -57,7 +57,7 @@ void printUsage()
          << "  [-v vocabfile]   set vocabulary file path" << endl
          << "  [-k num]         set value of k (number of clusters)" << endl
          << "  [-t numthreads]  set number of threads* (if applicable)" << endl
-         << "  [--galois]       run in Galois mode" << endl
+         << "  [--galois]       run in Galois mode (if available)" << endl
          << "  [--openmp]       run in OpenMP mode" << endl
          << "  [--autok]        set K automatically using input data" << endl
          << "  [--noscheme]     do not normalize weight values" << endl
@@ -230,7 +230,7 @@ int processArgs(int argc, char **argv,
 
 
 
-// main: set up Galois and start the clustering process.
+// main: set up and start the clustering process.
 int main(int argc, char **argv)
 {
     // get file names, and set up k and number of threads
@@ -271,6 +271,7 @@ int main(int argc, char **argv)
 
     // run the program based on the run type provided (none, openmp, galois)
     ClusterData *data = 0;
+#ifndef NO_GALOIS
     if(run_type == RUN_GALOIS) {
         // tell Galois the max thread count
         SPKMeansGalois spkm_galois(D, k, dc, wc, num_threads);
@@ -283,6 +284,9 @@ int main(int argc, char **argv)
         data = spkm_galois.runSPKMeans();
     }
     else if(run_type == RUN_OPENMP) {
+#else
+    if(run_type == RUN_OPENMP) {
+#endif
         // tell OpenMP the max thread count
         SPKMeansOpenMP spkm_openmp(D, k, dc, wc, num_threads);
         if(!optimize)

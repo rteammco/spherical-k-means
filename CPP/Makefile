@@ -1,14 +1,18 @@
 # Include the Galois library (relative path):
 GALOIS_PATH = ./../../../Galois-2.2.1
 
-INCLUDES = -I$(GALOIS_PATH)/build/release/include -I$(GALOIS_PATH)/include
-LINKS = -L$(GALOIS_PATH)/build/release/src -lgalois -pthread -ldl 
-SRC = src/main.cpp src/reader.cpp src/vectors.cpp src/timer.cpp src/cluster_data.cpp src/spkmeans.cpp src/spkmeans_openmp.cpp src/spkmeans_galois.cpp
+GALOIS_INCLUDES = -I$(GALOIS_PATH)/build/release/include -I$(GALOIS_PATH)/include
+GALOIS_LINKS = -L$(GALOIS_PATH)/build/release/src -lgalois
+LINKS = -pthread -ldl
+SRC = src/main.cpp src/reader.cpp src/vectors.cpp src/timer.cpp src/cluster_data.cpp src/spkmeans.cpp src/spkmeans_openmp.cpp
+GALOIS_SRC = src/spkmeans_galois.cpp
 
 
 # Compile normally (includes debug information):
 all:
-	g++ -DNDEBUG -g -O3 -ffast-math -fopenmp -std=c++0x $(SRC) -o spkmeans $(INCLUDES) $(LINKS)
+	g++ -DNDEBUG -g -O3 -ffast-math -fopenmp -std=c++0x $(SRC) $(GALOIS_SRC) -o spkmeans $(GALOIS_INCLUDES) $(GALOIS_LINKS) $(LINKS)
+nogalois:
+	g++ -DNDEBUG -g -O3 -ffast-math -fopenmp -std=c++0x $(SRC) -o spkmeans $(LINKS) -D NO_GALOIS
 
 
 # Remove the executable:

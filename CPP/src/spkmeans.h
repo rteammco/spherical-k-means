@@ -98,6 +98,7 @@ class SPKMeansOpenMP : public SPKMeans {
 
 
 // Galois version of the SPKMeans algorithm
+#ifndef NO_GALOIS
 class SPKMeansGalois : public SPKMeans {
   private:
     unsigned int num_threads;
@@ -113,6 +114,7 @@ class SPKMeansGalois : public SPKMeans {
     // run the algorithm
     ClusterData* runSPKMeans();
 };
+#endif
 
 
 
