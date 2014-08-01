@@ -1,6 +1,7 @@
 # Include the Galois library (relative path):
 GALOIS_PATH = ./../../../Galois-2.2.1
 
+# specify libraries and include files
 GALOIS_INCLUDES = -I$(GALOIS_PATH)/build/release/include -I$(GALOIS_PATH)/include
 GALOIS_LINKS = -L$(GALOIS_PATH)/build/release/src -lgalois
 LINKS = -pthread -ldl
@@ -8,11 +9,28 @@ SRC = src/main.cpp src/reader.cpp src/vectors.cpp src/timer.cpp src/cluster_data
 GALOIS_SRC = src/spkmeans_galois.cpp
 
 
+# set a flag if the Galois library path exists and if galois was installed
+GALOIS_EXISTS =  $(shell if [ -d $(GALOIS_PATH) ]; then echo y; fi)
+GALOIS_EXISTS += $(shell if [ -d $(GALOIS_PATH)/build/release/lib ]; then echo y; fi)
+
+
+# compile commands: with and without Galois
+COMPILE = g++ -DNDEBUG -g -O3 -ffast-math -fopenmp -std=c++0x $(SRC) $(GALOIS_SRC) -o spkmeans $(GALOIS_INCLUDES) $(GALOIS_LINKS) $(LINKS)
+COMPILE_NO_GALOIS = g++ -DNDEBUG -g -O3 -ffast-math -fopenmp -std=c++0x $(SRC) -o spkmeans $(LINKS) -D NO_GALOIS
+
+
 # Compile normally (includes debug information):
 all:
-	g++ -DNDEBUG -g -O3 -ffast-math -fopenmp -std=c++0x $(SRC) $(GALOIS_SRC) -o spkmeans $(GALOIS_INCLUDES) $(GALOIS_LINKS) $(LINKS)
-nogalois:
-	g++ -DNDEBUG -g -O3 -ffast-math -fopenmp -std=c++0x $(SRC) -o spkmeans $(LINKS) -D NO_GALOIS
+ifeq ($(GALOIS_EXISTS), y y)
+	$(COMPILE)
+# TODO - this only works with new versions of make
+#else ifeq($(GALOIS_EXISTS), y)
+#	@echo "Galois library found but not installed. Compiling without Galois."
+#	$(COMPILE_NO_GALOIS)
+else
+	@echo "Galois library not found. Compiling without Galois."
+	$(COMPILE_NO_GALOIS)
+endif
 
 
 # Remove the executable:
