@@ -7,10 +7,14 @@
 
 #include "timer.h"
 
+using namespace boost::posix_time;
+
 
 // Constructor: initializes the timer's counter to 0.
 Timer::Timer()
 {
+    started = false;
+    running = false;
     counter = 0;
 }
 
@@ -19,22 +23,40 @@ Timer::Timer()
 // or after a reset).
 void Timer::start()
 {
-    galois_timer.start();
+    start_t = microsec_clock::local_time();
+    started = true;
+    running = true;
 }
 
 
 // Stops the timer from ticking. This does not reset the counter.
 void Timer::stop()
 {
-    galois_timer.stop();
-    counter += galois_timer.get();
+    if(running) {
+        counter += getDiff();
+        running = false;
+    }
 }
 
 
 // Resets the timer's counter back to 0.
 void Timer::reset()
 {
+    started = false;
     counter = 0;
+}
+
+
+// Returns the number of milliseconds that passed since the last start()
+// functon call. If it was never called, returns 0.
+unsigned long Timer::getDiff()
+{
+    if(!started)
+        return 0;
+
+    ptime end_t = microsec_clock::local_time();
+    time_duration diff = end_t - start_t;
+    return diff.total_milliseconds();
 }
 
 
@@ -42,5 +64,8 @@ void Timer::reset()
 // the timer does not reset the counter value.
 unsigned long Timer::get()
 {
-    return counter;
+    if(running)
+        return getDiff();
+    else
+        return counter;
 }
