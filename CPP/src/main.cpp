@@ -75,7 +75,10 @@ void printUsage()
          << "    using TXN scheme," << endl
          << "    displaying clustering results," << endl
          << "    optimization enabled." << endl;
-    cout << "*To use max number of threads available, set to t = 0." << endl;
+    cout << "*To use max number of threads available, do not set t." << endl;
+    cout << endl
+         << "Example usage:" << endl
+         << "  $ ./spkmeans -d ../TestData/news20 -k 50 --openmp" << endl;
     cout << endl;
 }
 
@@ -167,29 +170,30 @@ int processArgs(int argc, char **argv,
         string arg(argv[i]);
 
         // if flag is --help, return 1 to print usage instructions
-        if(arg == "--help" || arg == "-h")
+        if(arg == "--help" || arg == "-help" || arg == "-h")
             return RETURN_HELP;
         // if flag is --version, return 2 to print version number
-        else if(arg == "--version" || arg == "-V")
+        else if(arg == "--version" || arg == "-version" || arg == "-V")
             return RETURN_VERSION;
 
         // if the flag was to run as galois or openmp, set the run type
-        else if(arg == "--galois")
+        else if(arg == "--galois" || arg == "-galois")
             *run_type = RUN_GALOIS;
-        else if(arg == "--openmp")
+        else if(arg == "--openmp" || arg == "-openmp")
             *run_type = RUN_OPENMP;
 
         // also check if flag was set to disable weight normalization, squelch
         // displaying results, or disable optimizations
-        else if(arg == "--noscheme")
+        else if(arg == "--noscheme" || arg == "-noscheme")
             *use_scheme = false;
-        else if(arg == "--noresults")
+        else if(arg == "--noresults" || arg == "-noresults")
             *show_results = false;
-        else if(arg == "--noop")
+        else if(arg == "--noop" || arg == "-noop")
             *optimize = false;
 
         // or if K should be selected automatically
-        else if(arg == "--autok" || arg == "--auto")
+        else if(arg == "--autok" || arg == "-autok" ||
+                arg == "--auto" || arg == "-auto")
             *auto_k = true;
 
         // otherwise, check the given flag value
