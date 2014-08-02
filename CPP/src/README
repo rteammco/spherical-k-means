@@ -1,0 +1,22 @@
+main.cpp:
+    - processes user arguments and sets up runtime flags
+    - calls the reader functions to read in data file(s)
+    - creates and runs the specified SPKMeans object
+reader.h/cpp:
+    - global functions that read and process the text data files
+vectors.h/cpp:
+    - global functions for operations on vectors (i.e. float arrays)
+timer.h/cpp:
+    - Timer object for measuring multicore runtime (uses Boost library)
+cluster_data.h/cpp (ClusterData class):
+    - ClusterData object contains all data structures and variables used while clustering
+    - used by the SPKMeans algorithms
+spkmeans.h:
+    - declarations for all of the SPKMeans classes
+    - SPKMeansGalois and SPKMeansOpenMP inherit from SPKMeans
+spkmeans.cpp:
+    - SPKMeans class: a single-thread version of the algorithm
+spkmeans_openmp.cpp:
+    - SPKMeansOpenMP class: parallel version using OpenMP
+spkmeans_galois.cpp:
+    - SPKMeansGalois class: parallel version using Galois
