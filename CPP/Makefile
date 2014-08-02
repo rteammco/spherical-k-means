@@ -36,13 +36,16 @@ GALOIS_EXISTS += $(shell if [ -d $(GALOIS_PATH)/build/release/lib ]; then echo y
 all: prep compile
 
 prep:
-	mkdir -p $(OBJ_DIR)
+	@mkdir -p $(OBJ_DIR)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	g++ $(FLAGS) $(GALOIS_INCLUDES) -c -o $@ $<
+	@echo "Compiling $@..."
+	@g++ $(FLAGS) $(GALOIS_INCLUDES) -c -o $@ $<
 
 compile: $(OBJ) $(GALOIS_OBJ)
+	@echo "\nBuilding executable:"
 	g++ $(FLAGS) $(GALOIS_INCLUDES) $? -o $(EXE) $(GALOIS_LINKS) $(LINKS)
+	@echo "\nCompilation complete: success!\n"
 
 #ifeq ($(GALOIS_EXISTS), y y)
 #	$(COMPILE)
@@ -59,6 +62,7 @@ compile: $(OBJ) $(GALOIS_OBJ)
 
 # Remove the executable and object files
 clean:
+	@echo "Deleting object files and executable:"
 	rm -f spkmeans
 	rm -rf $(OBJ_DIR)
 
