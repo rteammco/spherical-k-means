@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 main.cpp (PROGRAM STARTS HERE):
-=======
-main.cpp:
->>>>>>> 3cd198a2d18242b4f33143eddbd570e7c352a589
     - processes user arguments and sets up runtime flags
     - calls the reader functions to read in data file(s)
     - creates and runs the specified SPKMeans object
