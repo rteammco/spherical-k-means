@@ -6,6 +6,7 @@ matlab_news20
 CPP/spkmeans*
 __pycache__
 
+CPP/obj
 Matlab/MATLAB/*
 TestData/*.py
 Scripts/*

@@ -1,41 +1,70 @@
-# Include the Galois library (relative path):
-GALOIS_PATH = ./../../../Galois-2.2.1
+# Makefile for Spherical K-Means code
 
-# specify libraries and include files
+
+# specify flags and compiler variables
+EXE = spkmeans
+FLAGS = -DNDEBUG -g -O3 -ffast-math -fopenmp -std=c++0x
+SRC_DIR = src
+OBJ_DIR = obj
+
+
+# specify source files
+SRC_FILES = main.cpp reader.cpp vectors.cpp timer.cpp cluster_data.cpp spkmeans.cpp spkmeans_openmp.cpp
+GALOIS_SRC_FILES = spkmeans_galois.cpp
+OBJ = $(addprefix obj/, $(SRC_FILES:.cpp=.o))
+GALOIS_OBJ = $(addprefix obj/, $(GALOIS_SRC_FILES:.cpp=.o))
+SRC = $(addprefix $(SRC_DIR)/, $(SRC_FILES))
+GALOIS_SRC = $(addprefix $(SRC_DIR)/, $(GALOIS_SRC_FILES))
+
+
+# specify libraries and include sources
+GALOIS_PATH = ./../../../Galois-2.2.1
 GALOIS_INCLUDES = -I$(GALOIS_PATH)/build/release/include -I$(GALOIS_PATH)/include
 GALOIS_LINKS = -L$(GALOIS_PATH)/build/release/src -lgalois
 LINKS = -pthread -ldl
-SRC = src/main.cpp src/reader.cpp src/vectors.cpp src/timer.cpp src/cluster_data.cpp src/spkmeans.cpp src/spkmeans_openmp.cpp
-GALOIS_SRC = src/spkmeans_galois.cpp
 
 
 # set a flag if the Galois library path exists and if galois was installed
-GALOIS_EXISTS =  $(shell if [ -d $(GALOIS_PATH) ]; then echo y; fi)
+GALOIS_EXISTS  = $(shell if [ -d $(GALOIS_PATH) ]; then echo y; fi)
 GALOIS_EXISTS += $(shell if [ -d $(GALOIS_PATH)/build/release/lib ]; then echo y; fi)
 
 
-# compile commands: with and without Galois
-COMPILE = g++ -DNDEBUG -g -O3 -ffast-math -fopenmp -std=c++0x $(SRC) $(GALOIS_SRC) -o spkmeans $(GALOIS_INCLUDES) $(GALOIS_LINKS) $(LINKS)
-COMPILE_NO_GALOIS = g++ -DNDEBUG -g -O3 -ffast-math -fopenmp -std=c++0x $(SRC) -o spkmeans $(LINKS) -D NO_GALOIS
+################################################################################
+################################################################################
 
 
-# Compile normally (includes debug information):
-all:
-ifeq ($(GALOIS_EXISTS), y y)
-	$(COMPILE)
+all: prep compile
+
+prep:
+	mkdir -p $(OBJ_DIR)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	g++ $(FLAGS) $(GALOIS_INCLUDES) -c -o $@ $<
+
+compile: $(OBJ) $(GALOIS_OBJ)
+	g++ $(FLAGS) $(GALOIS_INCLUDES) $? -o $(EXE) $(GALOIS_LINKS) $(LINKS)
+
+#ifeq ($(GALOIS_EXISTS), y y)
+#	$(COMPILE)
 # TODO - this only works with new versions of make
 #else ifeq($(GALOIS_EXISTS), y)
 #	@echo "Galois library found but not installed. Compiling without Galois."
 #	$(COMPILE_NO_GALOIS)
-else
-	@echo "Galois library not found. Compiling without Galois."
-	$(COMPILE_NO_GALOIS)
-endif
+#else
+#	@echo "Galois library not found. Compiling without Galois."
+#	$(COMPILE_NO_GALOIS)
+#endif
 
+################################################################################
 
-# Remove the executable:
+# Remove the executable and object files
 clean:
-	rm spkmeans
+	rm -f spkmeans
+	rm -rf $(OBJ_DIR)
+
+
+################################################################################
+################################################################################
 
 
 # Run test with a small test file, with different versions:
