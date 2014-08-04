@@ -287,10 +287,15 @@ int main(int argc, char **argv)
              << " threads]." << endl;
         data = spkm_galois.runSPKMeans();
     }
-    else if(run_type == RUN_OPENMP) {
 #else
-    if(run_type == RUN_OPENMP) {
+    if(run_type == RUN_GALOIS) {
+        cout << endl << endl << "Error: GALOIS is not available."
+             << "Please re-compile with Galois to use the \"--galois\" option."
+             << endl << endl;
+        return 0;
+    }
 #endif
+    else if(run_type == RUN_OPENMP) {
         // tell OpenMP the max thread count
         SPKMeansOpenMP spkm_openmp(D, k, dc, wc, num_threads);
         if(!optimize)
