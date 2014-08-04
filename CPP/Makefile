@@ -1,6 +1,10 @@
 # Makefile for Spherical K-Means code
 
 
+# Galois path (needs to be installed and specified here)
+GALOIS_PATH = ./../../../Galois-2.2.1
+
+
 # specify flags and compiler variables
 EXE = spkmeans
 FLAGS = -DNDEBUG -g -O3 -ffast-math -fopenmp -std=c++0x
@@ -18,7 +22,6 @@ GALOIS_SRC = $(addprefix $(SRC_DIR)/, $(GALOIS_SRC_FILES))
 
 
 # specify libraries and include sources
-GALOIS_PATH = ./../../../Galois-2.2.1
 GALOIS_INCLUDES = -I$(GALOIS_PATH)/build/release/include -I$(GALOIS_PATH)/include
 GALOIS_LINKS = -L$(GALOIS_PATH)/build/release/src -lgalois
 LINKS = -pthread -ldl
@@ -38,7 +41,12 @@ all: prep compile
 prep:
 	@mkdir -p $(OBJ_DIR)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+# if Galois is installed, compile everything:
+ifeq ($(GALOIS_EXISTS), y y)
+$(OBJ): $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@echo "Compiling $@..."
+	@g++ $(FLAGS) $(GALOIS_INCLUDES) -c -o $@ $<
+$(GALOIS_OBJ): $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@echo "Compiling $@..."
 	@g++ $(FLAGS) $(GALOIS_INCLUDES) -c -o $@ $<
 
@@ -47,16 +55,19 @@ compile: $(OBJ) $(GALOIS_OBJ)
 	g++ $(FLAGS) $(GALOIS_INCLUDES) $? -o $(EXE) $(GALOIS_LINKS) $(LINKS)
 	@echo "\nCompilation complete: success!\n"
 
-#ifeq ($(GALOIS_EXISTS), y y)
-#	$(COMPILE)
-# TODO - this only works with new versions of make
-#else ifeq($(GALOIS_EXISTS), y)
-#	@echo "Galois library found but not installed. Compiling without Galois."
-#	$(COMPILE_NO_GALOIS)
-#else
-#	@echo "Galois library not found. Compiling without Galois."
-#	$(COMPILE_NO_GALOIS)
-#endif
+# otherwise, if Galois is not installed, compile without it:
+# TODO - else ifeq($(GALIS_EXISTS), y) ... only works in new version of make
+else
+	@echo "\nGalois library not found... compiling without it.\n"
+$(OBJ): $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@echo "Compiling $@..."
+	@g++ $(FLAGS) -c -o $@ $< -D NO_GALOIS
+
+compile: $(OBJ)
+	@echo "\nBuilding executable:"
+	g++ $(FLAGS) $? -o $(EXE) $(LINKS) -D NO_GALOIS
+	@echo "\nCompilation complete: success!\n"
+endif
 
 ################################################################################
 
