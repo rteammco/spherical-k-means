@@ -7,13 +7,11 @@
 
 #include "spkmeans.h"
 
-#include <iostream>
-
 #include "timer.h"
-
 #include "vectors.h"
-#include <vector>
 
+#include <iostream>
+#include <vector>
 
 using namespace std;
 
