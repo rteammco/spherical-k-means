@@ -1,0 +1,39 @@
+# Similarity estimation pseudocode
+
+
+t = 0
+t_min = 5 # choose a value here
+U = zeros(dc, k) # dc by k matrix
+
+while (dQ > THRESH):
+
+    # partitioning step
+    for each document i:
+        if t < t_min:
+            run_old_code(i)
+        elif t == t_min:
+            run_old_code(i)
+            for each cluster j:
+                #U[i][j] = *cosineSimilarity*(docs[i], clusters[j])
+                U[i][j] = cosines[i*k + j]
+        else:
+            # cosine similarity between document and its OWN cluster centroid
+            # (can be optimized w/ if(changed[p_asign[i])
+            cos_sim = cosineSimilarity(docs[i], clusters[p_asgns[i]])
+
+            max_sim = 0
+            cIndx = 0
+            for each cluster j:
+                U[i][j] = U[i][j] + norm(concepts[j] - old_concepts[j])
+
+                # if it's bigger than the cos-sim between doc i and its cluster,
+                # compute cosine similarity normally
+                if U[i][j] > cos_sim:
+                    sim_j = cosimeSimilairy(docs[i], concepts[j])
+                    U[i][j] = sim_j
+
+                    # TODO - do we just check the computed ones, or do we move this
+                    # outside and check against U[i][j]???
+                    if sim_j > max_sim:
+                        max_sim = sim_j
+                        cIndx = j

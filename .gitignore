@@ -11,3 +11,4 @@ Matlab/MATLAB/*
 TestData/*.py
 Scripts/*
 !Scripts/*.py
+!Notes/*.txt
