@@ -214,7 +214,7 @@ float* SPKMeans::computeConcept(ClusterData *data, int cIndx)
     }
 
     // normalize the concept vector and return it
-    vec_divide(concept, wc, wc);
+    //vec_divide(concept, wc, wc);
     vec_normalize(concept, wc);
     return concept;
 }
