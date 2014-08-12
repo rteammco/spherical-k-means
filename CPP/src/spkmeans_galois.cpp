@@ -44,7 +44,47 @@ unsigned int SPKMeansGalois::getNumThreads()
 
 
 
-/*** GALOIS PROCESSING STRUCTURES ***/
+/*// Scrap code (for the potential Graph implementaton)
+struct DataNode {
+    int id;
+};
+struct WordNode : public DataNode {
+    float value;
+};
+typedef Galois::Graph::LC_CSR_Graph<DataNode, float> Graph;
+struct SPKMeansRun {
+
+    // copy this stuff from the current ClusterData
+    ClusterData *data;
+    bool *changed;
+    float *cosines;
+    float *has_docs;
+    int k;
+
+    void operator() (Graph::GraphNode doc,
+                     Galois::UserContext<Graph::GraphNode>& ctx)
+    {
+        int i = 0;//doc->index;
+        int cIndx = 0;
+        if(changed[0])
+            cosines[i*k] = 0;//cosineSimilarity(data, i, 0);
+        for(int j=0; j<k; j++) {
+            if(changed[j])
+                cosines[i*k + j] = 0;//cosineSimilarity(data, i, j);
+            if(cosines[i*k + j] > cosines[i*k + cIndx])
+                cIndx = j;
+        }
+        data->assignCluster(i, cIndx);//, priority);
+        has_docs[cIndx] = true;
+
+        // TODO - now we have to do online recompuation for the concept vector
+        // and quality... this will require a thread lock :(
+    }
+
+};*/
+
+
+
 // Runs SPKMeans in the same parallel manner as OpenMP, without using any
 // additional online schemes or priorities.
 struct ComputeClustersBasic {
@@ -78,43 +118,43 @@ struct ComputeClustersBasic {
 };
 
 
-struct DataNode {
-    int id;
-};
-struct WordNode : public DataNode {
-    float value;
-};
 
-typedef Galois::Graph::LC_CSR_Graph<DataNode, float> Graph;
-struct SPKMeansRun {
+// Runs SPKMeans in with the online algorithm to loop constantly until
+// convergence. This version can make use of the priority function.
+struct ComputeClustersOnline : public ComputeClustersBasic {
 
-    // copy this stuff from the current ClusterData
-    ClusterData *data;
-    bool *changed;
-    float *cosines;
-    float *has_docs;
-    int k;
-
-    void operator() (Graph::GraphNode doc,
-                     Galois::UserContext<Graph::GraphNode>& ctx)
+    // Galois operator: run the clustering computation, with online additions
+    void operator() (int &i, Galois::UserContext<int> &ctx)
     {
-        int i = 0;//doc->index;
+        int k = data->k;
+        bool *changed = data->changed;
+        float *cosines = data->cosine_similarities;
+
+        // find the cluster with the best cosine similarity, and assign it
         int cIndx = 0;
         if(changed[0])
-            cosines[i*k] = 0;//cosineSimilarity(data, i, 0);
-        for(int j=0; j<k; j++) {
+            cosines[i*k] = cosineSimilarity(data, i, 0);
+        for(int j=1; j<k; j++) {
             if(changed[j])
-                cosines[i*k + j] = 0;//cosineSimilarity(data, i, j);
+                cosines[i*k + j] = cosineSimilarity(data, i, j);
             if(cosines[i*k + j] > cosines[i*k + cIndx])
                 cIndx = j;
         }
-        data->assignCluster(i, cIndx);//, priority);
-        has_docs[cIndx] = true;
+        data->assignCluster(i, cIndx);
 
-        // TODO - now we have to do online recompuation for the concept vector
-        // and quality... this will require a thread lock :(
+        // TODO - update the concept vector (live)
+        // TODO - update the quality (live)
     }
+};
 
+
+
+// Priority computation for the online version of the algorithm.
+struct ComputePriority {
+    unsigned int operator() (const int& val) const {
+        // TODO - implement
+        return 1;
+    }
 };
 
 
@@ -122,12 +162,12 @@ struct SPKMeansRun {
 // Run the spherical K-means algorithm using the Galois library.
 ClusterData* SPKMeansGalois::runSPKMeans()
 {
-    // first, convert the document matrix to a graph
+    /*// first, convert the document matrix to a graph
     Galois::Graph::LC_CSR_Graph<DataNode, float> g;
     
     // set up the Galois structures
     int num_nodes = dc + wc;
-    int num_edges = wc;
+    int num_edges = wc;*/
 
 
     //-----------------------------------------------------------------------//
