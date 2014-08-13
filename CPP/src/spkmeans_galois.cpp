@@ -178,7 +178,7 @@ struct ComputeClustersOnline : public ComputeClustersBasic {
 // Priority computation for the online version of the algorithm.
 struct ComputePriority {
     unsigned int operator() (const int& document_index) const {
-        // TODO - implement
+        // TODO - implement priority scheme and reference to documents
         return 1;
     }
 };
@@ -221,12 +221,18 @@ ClusterData* SPKMeansGalois::runSPKMeans()
     cout << "Initial quality: " << quality << endl;
 
 
-    // set up Galois computing structures
+    // set up Galois computing structures, and worklist prioritization
     ComputeClustersBasic comp(data);
 
     // bind the cosineSimilarity function
     comp.cosineSimilarity = bind(&SPKMeans::cosineSimilarity, this,
         placeholders::_1, placeholders::_2, placeholders::_3);
+
+    // this is the worklist ordering scheme using the ComputePriority struct
+    // TODO - the ChunkedFIFO: 32 vs. 64 vs. 16 vs. 8 etc.? What does it mean?
+    typedef Galois::WorkList::OrderedByIntegerMetric
+            <ComputePriority, Galois::WorkList::ChunkedFIFO<32>>
+            comp_wl;
 
     // set up iterators for use by the Galois loops
     auto start_any = boost::make_counting_iterator<int>(0);
@@ -243,7 +249,8 @@ ClusterData* SPKMeansGalois::runSPKMeans()
         // compute new partitions based on old concept vectors
         ptimer.start();
         Galois::for_each(start_any, end_dc, comp,
-            Galois::loopname("Compute Clusters"));
+                         Galois::wl<comp_wl>(),
+                         Galois::loopname("Compute Clusters"));
         ptimer.stop();
 
         if(optimize)
