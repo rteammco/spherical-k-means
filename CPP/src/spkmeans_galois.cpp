@@ -141,9 +141,35 @@ struct ComputeClustersOnline : public ComputeClustersBasic {
                 cIndx = j;
         }
         data->assignCluster(i, cIndx);
+        // TODO - assignCluster doesn't finalize the assignment, which must
+        //        be done in the online case
+        // Make another function: assignClusterOnline
 
-        // TODO - update the concept vector (live)
-        // TODO - update the quality (live)
+        // if the document moved, we must update quality and concept vectors
+        // TODO - this part needs to be thread safe (locking)
+        if(data->p_asgns[i] != cIndx) {
+            // TODO - update the concept vector (live)
+            // TODO - all of these updates should only take nz(i) time.
+/*            sU[cIndx] = sU[cIndx] - vec_sum(vec_squared(concepts[cIndx]));
+            for(int a=0; a<wc; a++) {
+                concepts[cIndx][a] =
+                    concepts[cIndx][a] + LR * cNorms[cIndx] + doc_matrix[i][a];
+            }
+            sU[cIndx] = sU[cIndx] + vec_sum(vec_squared(concepts[cIndx]));
+            cNorms[cIndx] = sqrt(sU[cIndx]);*/
+            
+            // remove quality from old vector
+            // TODO - ClusterData stores documents in compressed format
+            /*float old_quality = vec_dot(data->doc_matrix[i],
+                                        data->concepts[data->p_asgns[i]],
+                                        data->wc);
+            data->qualities[data->p_asgns[i]] -= old_quality;
+            // add quality to new vector
+            float new_quality = vec_dot(data->doc_matrix[i],
+                                        data->concepts[cIndx],
+                                        data->wc);
+            data->qualities[cIndx] += new_quality;*/
+        }
     }
 };
 
@@ -151,7 +177,7 @@ struct ComputeClustersOnline : public ComputeClustersBasic {
 
 // Priority computation for the online version of the algorithm.
 struct ComputePriority {
-    unsigned int operator() (const int& val) const {
+    unsigned int operator() (const int& document_index) const {
         // TODO - implement
         return 1;
     }
