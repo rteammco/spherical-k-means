@@ -7,6 +7,7 @@ GALOIS_PATH = ./../../../Galois-2.2.1
 
 # specify flags and compiler variables
 EXE = spkmeans
+COMPILER = /usr/bin/g++
 FLAGS = -DNDEBUG -g -O3 -ffast-math -fopenmp -std=c++0x
 SRC_DIR = src
 OBJ_DIR = obj
@@ -45,14 +46,14 @@ prep:
 ifeq ($(GALOIS_EXISTS), y y)
 $(OBJ): $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@echo "Compiling $@..."
-	@g++ $(FLAGS) $(GALOIS_INCLUDES) -c -o $@ $<
+	@$(COMPILER) $(FLAGS) $(GALOIS_INCLUDES) -c -o $@ $<
 $(GALOIS_OBJ): $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@echo "Compiling $@..."
-	@g++ $(FLAGS) $(GALOIS_INCLUDES) -c -o $@ $<
+	@$(COMPILER) $(FLAGS) $(GALOIS_INCLUDES) -c -o $@ $<
 
 compile: $(OBJ) $(GALOIS_OBJ)
 	@echo "\nBuilding executable:"
-	g++ $(FLAGS) $(GALOIS_INCLUDES) $? -o $(EXE) $(GALOIS_LINKS) $(LINKS)
+	$(COMPILER) $(FLAGS) $(GALOIS_INCLUDES) $? -o $(EXE) $(GALOIS_LINKS) $(LINKS)
 	@echo "\nCompilation complete: success!\n"
 
 # otherwise, if Galois is not installed, compile without it:
@@ -61,11 +62,11 @@ else
 	@echo "\nGalois library not found... compiling without it.\n"
 $(OBJ): $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@echo "Compiling $@..."
-	@g++ $(FLAGS) -c -o $@ $< -D NO_GALOIS
+	@$(COMPILER) $(FLAGS) -c -o $@ $< -D NO_GALOIS
 
 compile: $(OBJ)
 	@echo "\nBuilding executable:"
-	g++ $(FLAGS) $? -o $(EXE) $(LINKS) -D NO_GALOIS
+	$(COMPILER) $(FLAGS) $? -o $(EXE) $(LINKS) -D NO_GALOIS
 	@echo "\nCompilation complete: success!\n"
 endif
 

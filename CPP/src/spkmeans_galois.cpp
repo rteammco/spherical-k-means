@@ -198,15 +198,6 @@ ClusterData* SPKMeansGalois::runSPKMeans()
 
     //-----------------------------------------------------------------------//
 
-    // keep track of the run time of this algorithm
-    Timer timer;
-    timer.start();
-
-    // keep track of all individual component times for analysis
-    Timer ptimer;
-    Timer ctimer;
-    Timer qtimer;
-
     // apply the TXN scheme on the document vectors (normalize them)
     txnScheme();
 
@@ -239,6 +230,15 @@ ClusterData* SPKMeansGalois::runSPKMeans()
     auto end_dc = boost::make_counting_iterator<int>(dc);
     //auto end_k = boost::make_counting_iterator<int>(k);
 
+
+    // keep track of the run time of this algorithm
+    Timer timer;
+    timer.start();
+
+    // keep track of all individual component times for analysis
+    Timer ptimer;
+    Timer ctimer;
+    Timer qtimer;
 
     // do spherical k-means loop
     float dQ = Q_THRESHOLD * 10;
