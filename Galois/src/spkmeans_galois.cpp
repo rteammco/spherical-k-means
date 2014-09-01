@@ -20,6 +20,14 @@ using namespace std;
 
 
 
+// GLOBAL VARIABLES
+unsigned int k;
+unsigned int dc;
+unsigned int wc;
+unsigned int nz;
+
+
+
 /*********************** GALOIS STRUCTS AND DEFINITIONS ***********************/
 
 
@@ -46,9 +54,10 @@ struct PartitionBasic {
 
 // Initializes the graph data to prepare it for clustering.
 // Returns the number of document nodes in the graph.
-unsigned int init(Graph &g)
+void init(Graph &g)
 {
     unsigned int max_id = 0;
+    unsigned int num_nz = 0;
 
     for (Graph::iterator it = g.begin(), end = g.end(); it != end; it++) {
         Graph::GraphNode node = *it;
@@ -56,6 +65,7 @@ unsigned int init(Graph &g)
 
         unsigned int num_edges =
             g.edge_end(node, Galois::NONE) - g.edge_begin(node, Galois::NONE);
+        num_nz += num_edges;
 
         // if this node has edges, then it is a document node, so set max_id
         unsigned int cur_id = (unsigned int) node;
@@ -69,7 +79,10 @@ unsigned int init(Graph &g)
         }
     }
 
-    return max_id;
+    // initialize global graph data values
+    dc = max_id;
+    wc = g.size() - dc;
+    nz = num_nz;
 }
 
 
@@ -84,7 +97,7 @@ int main(int argc, char ** argv)
         return 0;
     }
     const char *file = argv[1];
-    const unsigned int k = atoi(argv[2]);
+    k = atoi(argv[2]);
     unsigned int n_threads = atoi(argv[3]);
 
     // initialize Galois threads
@@ -100,9 +113,11 @@ int main(int argc, char ** argv)
     Galois::Graph::readGraph(g, file);
 
     // initialize the graph data
-    unsigned int dc = init(g);
-    unsigned int wc = g.size() - dc;
-    cout << "Data: " << dc << " documents and " << wc << " words." << endl;
+    init(g);
+    cout << "Data: " << dc << " documents, " << wc << " words, and "
+                     << nz << " non-zero features." << endl;
+
+    // run spherical k-means
 
     return 0;
 }
