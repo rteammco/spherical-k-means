@@ -34,7 +34,9 @@ unsigned int nz;
 // Graph node data defined here (for both documents and features).
 struct Node {
     // TODO - fill this out appropriately
+    unsigned int node_id;
     unsigned int cluster_id;
+    float *cosines;
 };
 
 
@@ -45,19 +47,78 @@ typedef Galois::Graph::LC_CSR_Graph<Node, float> Graph;
 // The core processing struct used by Galois to run SPKMeans.
 struct PartitioningBasic {
     
-    float *concepts;
+
+    Graph *g;
+
+    float **concepts;
     float *qualities;
+    bool *changed;
 
-    PartitioningBasic ()
+
+    // Keep track of the Graph object, and initialize all data arrays.
+    PartitioningBasic(Graph &g_)
     {
+        g = &g_;
 
+        concepts = new float*[k];
+        qualities = new float[k];
+        changed = new bool[k];
+        for(int i=0; i<k; i++) {
+            changed[i] = true;
+        }
     }
 
+
+    // Delete all arrays to clean up memory.
+    ~PartitioningBasic()
+    {
+        delete[] concepts;
+        delete[] qualities;
+        delete[] changed;
+    }
+
+
+    // Computes the cosine similarity value between the given document and
+    // the concept vector identified by the cluster_id.
+    // TODO - pass as reference, or no?
+    float cosineSimilarity(Graph::GraphNode node, unsigned int cluster_id)
+    {
+        // sum up the cosine similarity (for each edge)
+        float cos = 0;
+        for(Graph::edge_iterator itr = g->edge_begin(node, Galois::NONE),
+                                 end = g->edge_end(node, Galois::NONE);
+                                 itr != end; itr++)
+        {
+            Graph::GraphNode word = g->getEdgeDst(itr);
+            unsigned int word_id = (word - dc);
+            float val = g->getEdgeData(itr, Galois::NONE);
+            cos += concepts[cluster_id][word_id] * val;
+        }
+
+        return cos;
+    }
+
+
+    // Spherical k-means clustering step: assigns the document node to the
+    // cluster of closest cosine similarity.
     void operator () (Graph::GraphNode node,
                       Galois::UserContext<Graph::GraphNode> &ctx)
     {
-        ;
+        Node &data = g->getData(node);
+
+        int cIndx = 0;
+        if(changed[0])
+            data.cosines[0] = cosineSimilarity(node, 0);
+        for(int j=0; j<k; j++) {
+            if(changed[j])
+                data.cosines[j] = cosineSimilarity(node, j);
+            if(data.cosines[j] > data.cosines[cIndx])
+                cIndx = j;
+        }
+
+        data.cluster_id = cIndx;
     }
+
 };
 
 
@@ -87,8 +148,9 @@ void init(Graph &g)
 
         // if document, initialize its node data
         if (num_edges > 0) {
-            // TODO - fill this out appropriately
-            data.cluster_id = 0;
+            data.node_id = cur_id;
+            data.cluster_id = 0; // TODO
+            data.cosines = new float[k];
         }
     }
 
