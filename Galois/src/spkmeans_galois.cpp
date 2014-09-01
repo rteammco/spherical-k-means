@@ -43,8 +43,21 @@ typedef Galois::Graph::LC_CSR_Graph<Node, float> Graph;
 
 
 // The core processing struct used by Galois to run SPKMeans.
-struct PartitionBasic {
-    ;
+struct PartitioningBasic {
+    
+    float *concepts;
+    float *qualities;
+
+    PartitioningBasic ()
+    {
+
+    }
+
+    void operator () (Graph::GraphNode node,
+                      Galois::UserContext<Graph::GraphNode> &ctx)
+    {
+        ;
+    }
 };
 
 
