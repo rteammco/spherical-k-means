@@ -206,15 +206,18 @@ float* SPKMeans::computeConcept(ClusterData *data, int cIndx)
         concept[i] = 0;
 
     // find documents associated w/ this cluster, and sum them
+    int n_docs = 0;
     for(int i=0; i<dc; i++) { // for each document
         if(data->p_asgns[i] == cIndx) { // if doc in cluster
+            n_docs++;
             for(int j=0; j<wc; j++) // add words to concept
                 concept[j] += doc_matrix[i][j];
         }
     }
 
-    // normalize the concept vector and return it
-    //vec_divide(concept, wc, wc);
+    // compute the concept vector from the mean and return it
+    if(n_docs > 0)
+        vec_divide(concept, n_docs, wc);
     vec_normalize(concept, wc);
     return concept;
 }
