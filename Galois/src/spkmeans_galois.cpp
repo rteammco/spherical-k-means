@@ -46,14 +46,12 @@ typedef Galois::Graph::LC_CSR_Graph<Node, float> Graph;
 
 // The core processing struct used by Galois to run SPKMeans.
 struct PartitioningBasic {
-    
 
     Graph *g;
 
     float **concepts;
     float *qualities;
     bool *changed;
-
 
     // Keep track of the Graph object, and initialize all data arrays.
     PartitioningBasic(Graph &g_)
@@ -72,7 +70,7 @@ struct PartitioningBasic {
     // Delete all arrays to clean up memory.
     ~PartitioningBasic()
     {
-        delete[] concepts;
+        delete[] concepts; // TODO - does this delete the 2D list?
         delete[] qualities;
         delete[] changed;
     }
@@ -116,13 +114,66 @@ struct PartitioningBasic {
                 cIndx = j;
         }
 
+        unsigned int last_cluster = data.cluster_id;
         data.cluster_id = cIndx;
+        if(cIndx != last_cluster) {
+            changed[cIndx] = true;
+            changed[last_cluster] = true;
+        }
     }
 
 };
 
 
 /******************************************************************************/
+
+
+
+void reportQuality(PartitioningBasic &p, float quality, float dQ)
+{
+    cout << "Quality: " << quality << " (+" << dQ << ")";
+    int num_same = 0;
+    for (int i=0; i<k; i++)
+        if(!(p.changed[i]))
+            num_same++;
+    cout << " --- " << num_same << " clusters are the same." << endl;
+}
+
+float computeQ(PartitioningBasic &p, Graph &g)
+{
+    float quality = 0;
+
+    //float **sums = new float[k][wc] <- zeros;
+    //for each document:
+    //  cIndx = document.cluster_id;
+    //  for each word in document:
+    //      sums[cIndx][word] += word.val;
+    //for each i to k:
+    //  if changed[i]:
+    //      concepts[i] = vec_normalize(sums[i], wc);
+    //      qualities[i] = vec_dot(sums[i], concepts[i], wc);
+    //TODO - double-check this algorithm... it looks fishy!
+
+    /*for(int i=0; i<k; i++) {
+        if(p.changed[i]) {
+            float sum_p[wc];
+            for(int j=0; j<wc; j++)
+                sum_p[j] = 0;
+            // add all documents associated with this cluster
+            for(int j=0; j<dc; j++) {
+                if(data.p_asgns[j] == i) {
+                    for(int a=0; a<wc; a++)
+                        sum_p[a] += doc_matrix[j][a];
+                }
+            }
+            data->qualities[i] = vec_dot(sum_p, data->concepts[i], wc);
+            delete[] sum_p;
+        }
+        quality += p.qualities[i];
+    }*/
+
+    return quality;
+}
 
 
 
@@ -175,6 +226,7 @@ int main(int argc, char ** argv)
     k = atoi(argv[2]);
     unsigned int n_threads = atoi(argv[3]);
 
+
     // initialize Galois threads
     Galois::setActiveThreads(n_threads);
     n_threads = Galois::getActiveThreads();
@@ -183,16 +235,48 @@ int main(int argc, char ** argv)
         s = "";
     cout << "Running with " << n_threads << " thread" << s << "." << endl;
 
+
     // read graph file
     Graph g;
     Galois::Graph::readGraph(g, file);
 
-    // initialize the graph data
+
+    // initialize the graph data and get initial quality
     init(g);
     cout << "Data: " << dc << " documents, " << wc << " words, and "
                      << nz << " non-zero features." << endl;
+    PartitioningBasic p(g);
+    float quality = 0;//computeQ(p);
+
 
     // run spherical k-means
+    const float Q_THRESHOLD = 0.001;
+    float dQ = Q_THRESHOLD * 10;
+    int iterations = 0;
+    Galois::Timer timer;
+    timer.start();
+    while(dQ > Q_THRESHOLD) {
+        iterations++;
+
+        // TODO - do_all instead?
+        Galois::for_each(g.begin(), g.begin() + dc, p,
+                         Galois::loopname("Partitioning"));
+                         // Galois::wl...
+        
+        // TODO - galois version (or just online version)
+        for(int i=0; i<k; i++) {
+            if(p.changed[i]) {
+                //delete[] p.concepts[i];
+                //p.concepts[i] = computeConcept();
+            }
+        }
+
+        // TODO - galois version (or just online version)
+        float n_quality = 0;//computeQ(p);
+        dQ = n_quality - quality;
+        quality = n_quality;
+    }
+
 
     return 0;
 }
