@@ -283,8 +283,7 @@ ClusterData* SPKMeansGalois::runSPKMeans()
 
     // report runtime statistics
     timer.stop();
-    reportTime(iterations, timer.get(), ptimer.get(), ctimer.get(),
-               qtimer.get());
+    reportTime(iterations, timer.get(), ptimer.get(), ctimer.get());
 
     // return the resulting partitions and concepts in the ClusterData struct
     return data;

@@ -53,7 +53,7 @@ class SPKMeans {
 
     // report timer stats
     void reportTime(int iterations, float total_time,
-                    float p_time = 0, float c_time = 0, float q_time = 0);
+                    float p_time = 0, float c_time = 0);
 
   public:
     // initialize wc, dc, k, and doc_matrix, and document norms

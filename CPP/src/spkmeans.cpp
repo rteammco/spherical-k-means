@@ -87,11 +87,11 @@ void SPKMeans::reportQuality(ClusterData *data, float quality, float dQ)
 
 // Reports time data after running the algorithm.
 void SPKMeans::reportTime(int iterations, float total_time,
-                          float p_time, float c_time, float q_time)
+                          float p_time, float c_time)
 {
     cout << "Done in " << total_time / 1000
          << " seconds after " << iterations << " iterations." << endl;
-    float total = p_time + c_time + q_time;
+    float total = p_time + c_time;
     if(total == 0)
         cout << "No individual time stats available." << endl;
     else {
@@ -99,9 +99,7 @@ void SPKMeans::reportTime(int iterations, float total_time,
              << "   partitioning [" << p_time << "] ("
                 << (p_time/total)*100 << "%)" << endl
              << "   concepts     [" << c_time << "] ("
-                << (c_time/total)*100 << "%)" << endl
-             << "   quality      [" << q_time << "] ("
-                << (q_time/total)*100 << "%)" << endl;
+                << (c_time/total)*100 << "%)" << endl;
     }
 }
 
@@ -273,8 +271,6 @@ ClusterData* SPKMeans::runSPKMeans()
     // keep track of all individual component times for analysis
     Timer ptimer;
     Timer ctimer;
-    Timer ctimer2;
-    Timer qtimer;
 
     // apply the TXN scheme on the document vectors (normalize them)
     txnScheme();
@@ -370,23 +366,12 @@ ClusterData* SPKMeans::runSPKMeans()
             data->findChangedClusters();
         data->applyAssignments();
 
-        // compute new concept vectors
+        // compute new concept vectors and quality
         ctimer.start();
-        /*for(int i=0; i<k; i++) {
-            if(changed[i]) {
-                delete[] concepts[i];
-                concepts[i] = computeConcept(data, i);
-            }
-        }*/
         float n_quality = computeConcepts(data);
-        ctimer.stop();
-
-        // compute quality of new partitioning
-        qtimer.start();
-        //float n_quality = computeQ(data);
         dQ = n_quality - quality;
         quality = n_quality;
-        qtimer.stop();
+        ctimer.stop();
 
         // report the quality of the current partitioning
         reportQuality(data, quality, dQ);
@@ -395,9 +380,7 @@ ClusterData* SPKMeans::runSPKMeans()
 
     // report runtime statistics
     timer.stop();
-    reportTime(iterations, timer.get(), ptimer.get(), ctimer.get(),
-               qtimer.get());
-    cout << "TIME2: " << ctimer2.get() << endl;
+    reportTime(iterations, timer.get(), ptimer.get(), ctimer.get());
 
     // return the resulting clusters and concepts in the ClusterData struct
     return data;
