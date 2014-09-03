@@ -238,7 +238,6 @@ ClusterData* SPKMeansGalois::runSPKMeans()
     // keep track of all individual component times for analysis
     Timer ptimer;
     Timer ctimer;
-    Timer qtimer;
 
     // do spherical k-means loop
     float dQ = Q_THRESHOLD * 10;
@@ -257,24 +256,12 @@ ClusterData* SPKMeansGalois::runSPKMeans()
             data->findChangedClusters();
         data->applyAssignments();
 
-        // compute new concept vectors
+        // compute new concept vectors and quality
         ctimer.start();
-        //Galois::for_each(start_any, end_k, cC,
-        //    Galois::loopname("Compute Concepts"));
-        for(int i=0; i<k; i++) {
-            if(changed[i]) {
-                delete[] concepts[i];
-                concepts[i] = computeConcept(data, i);
-            }
-        }
-        ctimer.stop();
-
-        // compute quality of new partitioning
-        qtimer.start();
-        float n_quality = computeQ(data);
+        float n_quality = computeConcepts(data);
         dQ = n_quality - quality;
         quality = n_quality;
-        qtimer.stop();
+        ctimer.stop();
 
         // report the quality of the current partitioning
         reportQuality(data, quality, dQ);

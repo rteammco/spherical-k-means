@@ -52,7 +52,6 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
     // keep track of all individual component times for analysis
     Timer ptimer;
     Timer ctimer;
-    Timer qtimer;
 
     // apply the TXN scheme on the document vectors (normalize them)
     txnScheme();
@@ -98,24 +97,12 @@ ClusterData* SPKMeansOpenMP::runSPKMeans()
             data->findChangedClusters();
         data->applyAssignments();
 
-        // compute new concept vectors
+        // compute new concept vectors and quality
         ctimer.start();
-        #pragma omp parallel for
-        for(int i=0; i<k; i++) {
-            // only update concept vectors if cluster has changed
-            if(changed[i]) {
-                delete[] concepts[i];
-                concepts[i] = computeConcept(data, i);
-            }
-        }
-        ctimer.stop();
-
-        // compute quality of new partitioning
-        qtimer.start();
-        float n_quality = computeQ(data);
+        float n_quality = computeConcepts(data);
         dQ = n_quality - quality;
         quality = n_quality;
-        qtimer.stop();
+        ctimer.stop();
 
         // report the quality of the current partitioning
         reportQuality(data, quality, dQ);

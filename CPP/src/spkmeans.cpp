@@ -199,11 +199,12 @@ float SPKMeans::cosineSimilarity(ClusterData *data, int doc_index, int cIndx)
 float SPKMeans::computeConcepts(ClusterData *data)
 {
     // init sum vectors and cluster sizes to 0
-    float sums[k][wc];// = new float*[k];
+    //float sums[k][wc];
+    float **sums = new float*[k];
     int sizes[k];
     for(int i=0; i<k; i++) {
         sizes[i] = 0;
-        //sums[i] = new float[wc];
+        sums[i] = new float[wc];
         for(int j=0; j<wc; j++)
             sums[i][j] = 0;
     }
@@ -231,6 +232,8 @@ float SPKMeans::computeConcepts(ClusterData *data)
         }
         quality += data->qualities[i];
     }
+
+    delete[] sums;
 
     return quality;
 }
