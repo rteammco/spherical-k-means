@@ -255,7 +255,7 @@ int main(int argc, char ** argv)
     int iterations = 0;
     Galois::Timer timer;
     timer.start();
-    while(dQ > Q_THRESHOLD) {
+    /*while(dQ > Q_THRESHOLD) {
         iterations++;
 
         // TODO - do_all instead?
@@ -275,7 +275,11 @@ int main(int argc, char ** argv)
         float n_quality = 0;//computeQ(p);
         dQ = n_quality - quality;
         quality = n_quality;
-    }
+    }*/
+
+    timer.stop();
+    cout << "Finished in " << iterations << " and " << timer.get()
+         << " ms." << endl;
 
 
     return 0;
