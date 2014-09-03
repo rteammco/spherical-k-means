@@ -2,7 +2,15 @@
 
 
 # Galois path (needs to be installed and specified here)
-GALOIS_PATH = ./../../../Galois-2.2.1
+GALOIS_PATH_RAW = ./../../../Galois-2.2.1
+
+# For 64-bit systems, try to use the 64-bit installation.
+BITS = $(shell getconf LONG_BIT)
+ifeq ($(BITS), 64)
+GALOIS_PATH = $(GALOIS_PATH_RAW)_64
+else
+GALOIS_PATH = $(GALOIS_PATH_RAW)
+endif
 
 
 # specify flags and compiler variables
