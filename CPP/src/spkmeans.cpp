@@ -198,6 +198,44 @@ float SPKMeans::cosineSimilarity(ClusterData *data, int doc_index, int cIndx)
 // Computes the concept vector of the given cluster (by index). The
 // cluster documents are accessed using the ClusterData struct, and the
 // associated concept vector will be allocated and populated.
+float SPKMeans::computeConcepts(ClusterData *data)
+{
+    // init sum vectors and cluster sizes to 0
+    float sums[k][wc];// = new float*[k];
+    int sizes[k];
+    for(int i=0; i<k; i++) {
+        sizes[i] = 0;
+        //sums[i] = new float[wc];
+        for(int j=0; j<wc; j++)
+            sums[i][j] = 0;
+    }
+
+    // increment values for each cluster
+    for(int i=0; i<dc; i++) {
+        int cluster = data->p_asgns[i];
+        sizes[cluster]++;
+        for(auto word : data->docs[i].words)
+            sums[cluster][word.index] += word.value;
+    }
+
+    float quality = 0;
+    for(int i=0; i<k; i++) {
+        if(data->changed[i]) {
+            // get new concept vector
+            //delete[] data->concepts[i];
+            memcpy(data->concepts[i], sums[i], wc*sizeof(float));
+            if(sizes[i] > 0)
+                vec_divide(data->concepts[i], sizes[i], wc);
+            vec_normalize(data->concepts[i], wc);
+
+            // update quality
+            data->qualities[i] = vec_dot(data->concepts[i], sums[i], wc);
+        }
+        quality += data->qualities[i];
+    }
+
+    return quality;
+}
 float* SPKMeans::computeConcept(ClusterData *data, int cIndx)
 {
     // create the concept vector and initialize it to 0
@@ -235,6 +273,7 @@ ClusterData* SPKMeans::runSPKMeans()
     // keep track of all individual component times for analysis
     Timer ptimer;
     Timer ctimer;
+    Timer ctimer2;
     Timer qtimer;
 
     // apply the TXN scheme on the document vectors (normalize them)
@@ -333,17 +372,18 @@ ClusterData* SPKMeans::runSPKMeans()
 
         // compute new concept vectors
         ctimer.start();
-        for(int i=0; i<k; i++) {
+        /*for(int i=0; i<k; i++) {
             if(changed[i]) {
                 delete[] concepts[i];
                 concepts[i] = computeConcept(data, i);
             }
-        }
+        }*/
+        float n_quality = computeConcepts(data);
         ctimer.stop();
 
         // compute quality of new partitioning
         qtimer.start();
-        float n_quality = computeQ(data);
+        //float n_quality = computeQ(data);
         dQ = n_quality - quality;
         quality = n_quality;
         qtimer.stop();
@@ -357,6 +397,7 @@ ClusterData* SPKMeans::runSPKMeans()
     timer.stop();
     reportTime(iterations, timer.get(), ptimer.get(), ctimer.get(),
                qtimer.get());
+    cout << "TIME2: " << ctimer2.get() << endl;
 
     // return the resulting clusters and concepts in the ClusterData struct
     return data;

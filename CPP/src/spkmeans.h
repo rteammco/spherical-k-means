@@ -70,6 +70,7 @@ class SPKMeans {
 
     // spkmeans computation functions made public for binding to Galois structs
     float cosineSimilarity(ClusterData *data, int doc_index, int cIndx);
+    float computeConcepts(ClusterData *data);
     float* computeConcept(ClusterData *data, int cIndx);
 
     // the algorithm is implemented differently by each type of paradigm
